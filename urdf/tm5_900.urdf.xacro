@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="tm5_900">
+
+  <xacro:include filename="$(find tm5_900)/urdf/tm5_900_macro.xacro" />
+
+  <link name="world" />
+
+  <xacro:property name="physical_params_file" value="$(find tm5_900)/config/physical_parameters.yaml" />
+
+  <xacro:tm5_900_robot prefix="" parent="world" physical_parameters_file="${physical_params_file}">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </xacro:tm5_900_robot>
+
+</robot>

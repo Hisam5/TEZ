@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:macro name="tm5_900_robot" params="parent *origin prefix physical_parameters_file">
+
+    <xacro:property name="phys_params" value="${xacro.load_yaml(physical_parameters_file)}"/>
+    <xacro:property name="inertia" value="${phys_params['inertia_parameters']}"/>
+
+    <joint name="${prefix}base_joint" type="fixed">
+      <xacro:insert_block name="origin" />
+      <parent link="${parent}" />
+      <child link="${prefix}base_link" />
+    </joint>
+
+    <link name="${prefix}base_link">
+      <inertial>
+        <origin xyz="${inertia['center_of_mass']['base_cog']['x']} ${inertia['center_of_mass']['base_cog']['y']} ${inertia['center_of_mass']['base_cog']['z']}" rpy="0 0 0" />
+        <mass value="${inertia['base_mass']}" />
+        <inertia ixx="${inertia['tensor']['base']['ixx']}" ixy="${inertia['tensor']['base']['ixy']}" ixz="${inertia['tensor']['base']['ixz']}" iyy="${inertia['tensor']['base']['iyy']}" iyz="${inertia['tensor']['base']['iyz']}" izz="${inertia['tensor']['base']['izz']}" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/base_link.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/base_link.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="${prefix}link1">
+      <inertial>
+        <origin xyz="${inertia['center_of_mass']['link1_cog']['x']} ${inertia['center_of_mass']['link1_cog']['y']} ${inertia['center_of_mass']['link1_cog']['z']}" rpy="0 0 0" />
+        <mass value="${inertia['link1_mass']}" />
+        <inertia ixx="${inertia['tensor']['link1']['ixx']}" ixy="${inertia['tensor']['link1']['ixy']}" ixz="${inertia['tensor']['link1']['ixz']}" iyy="${inertia['tensor']['link1']['iyy']}" iyz="${inertia['tensor']['link1']['iyz']}" izz="${inertia['tensor']['link1']['izz']}" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/link1.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/link1.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${prefix}link1_joint" type="revolute">
+      <origin xyz="0 0 0.066" rpy="0 0 0" />
+      <parent link="${prefix}base_link" />
+      <child link="${prefix}link1" />
+      <axis xyz="0 0 -1" />
+      <limit lower="-4.712" upper="4.712" effort="150" velocity="3.141" />
+      <dynamics damping="0.1" friction="0.1" />
+    </joint>
+
+    <link name="${prefix}link2">
+      <inertial>
+        <origin xyz="${inertia['center_of_mass']['link2_cog']['x']} ${inertia['center_of_mass']['link2_cog']['y']} ${inertia['center_of_mass']['link2_cog']['z']}" rpy="0 0 0" />
+        <mass value="${inertia['link2_mass']}" />
+        <inertia ixx="${inertia['tensor']['link2']['ixx']}" ixy="${inertia['tensor']['link2']['ixy']}" ixz="${inertia['tensor']['link2']['ixz']}" iyy="${inertia['tensor']['link2']['iyy']}" iyz="${inertia['tensor']['link2']['iyz']}" izz="${inertia['tensor']['link2']['izz']}" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/link2.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/link2.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${prefix}link2_joint" type="revolute">
+      <origin xyz="-0.064479 -0.017456 0.0815" rpy="1.5708 0 -1.3064" />
+      <parent link="${prefix}link1" />
+      <child link="${prefix}link2" />
+      <axis xyz="0 0 -1" />
+      <limit lower="-3.141" upper="3.141" effort="150" velocity="3.141" />
+      <dynamics damping="0.1" friction="0.1" />
+    </joint>
+
+    <link name="${prefix}link3">
+      <inertial>
+        <origin xyz="${inertia['center_of_mass']['link3_cog']['x']} ${inertia['center_of_mass']['link3_cog']['y']} ${inertia['center_of_mass']['link3_cog']['z']}" rpy="0 0 0" />
+        <mass value="${inertia['link3_mass']}" />
+        <inertia ixx="${inertia['tensor']['link3']['ixx']}" ixy="${inertia['tensor']['link3']['ixy']}" ixz="${inertia['tensor']['link3']['ixz']}" iyy="${inertia['tensor']['link3']['iyy']}" iyz="${inertia['tensor']['link3']['iyz']}" izz="${inertia['tensor']['link3']['izz']}" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/link3.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/link3.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${prefix}link3_joint" type="revolute">
+      <origin xyz="-0.042946 0.42684 0" rpy="3.1416 0 -3.0413" />
+      <parent link="${prefix}link2" />
+      <child link="${prefix}link3" />
+      <axis xyz="0 0 -1" />
+      <limit lower="-2.705" upper="2.705" effort="150" velocity="3.141" />
+      <dynamics damping="0.1" friction="0.1" />
+    </joint>
+
+    <link name="${prefix}link4">
+      <inertial>
+        <origin xyz="${inertia['center_of_mass']['link4_cog']['x']} ${inertia['center_of_mass']['link4_cog']['y']} ${inertia['center_of_mass']['link4_cog']['z']}" rpy="0 0 0" />
+        <mass value="${inertia['link4_mass']}" />
+        <inertia ixx="${inertia['tensor']['link4']['ixx']}" ixy="${inertia['tensor']['link4']['ixy']}" ixz="${inertia['tensor']['link4']['ixz']}" iyy="${inertia['tensor']['link4']['iyy']}" iyz="${inertia['tensor']['link4']['iyz']}" izz="${inertia['tensor']['link4']['izz']}" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/link4.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/link4.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${prefix}link4_joint" type="revolute">
+      <origin xyz="0.2555 0.32257 -0.008" rpy="-3.1416 0 2.4717" />
+      <parent link="${prefix}link3" />
+      <child link="${prefix}link4" />
+      <axis xyz="0 0 -1" />
+      <limit lower="-3.141" upper="3.141" effort="150" velocity="3.927" />
+      <dynamics damping="0.1" friction="0.1" />
+    </joint>
+
+    <link name="${prefix}link5">
+      <inertial>
+        <origin xyz="${inertia['center_of_mass']['link5_cog']['x']} ${inertia['center_of_mass']['link5_cog']['y']} ${inertia['center_of_mass']['link5_cog']['z']}" rpy="0 0 0" />
+        <mass value="${inertia['link5_mass']}" />
+        <inertia ixx="${inertia['tensor']['link5']['ixx']}" ixy="${inertia['tensor']['link5']['ixy']}" ixz="${inertia['tensor']['link5']['ixz']}" iyy="${inertia['tensor']['link5']['iyy']}" iyz="${inertia['tensor']['link5']['iyz']}" izz="${inertia['tensor']['link5']['izz']}" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/link5.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/link5.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${prefix}link5_joint" type="revolute">
+      <origin xyz="0.011533 0.048343 0.0585" rpy="-0.53433 -1.5708 -1.2417" />
+      <parent link="${prefix}link4" />
+      <child link="${prefix}link5" />
+      <axis xyz="0 0 -1" />
+      <limit lower="-3.141" upper="3.141" effort="150" velocity="3.927" />
+      <dynamics damping="0.1" friction="0.1" />
+    </joint>
+
+    <link name="${prefix}link6">
+      <inertial>
+        <origin xyz="${inertia['center_of_mass']['link6_cog']['x']} ${inertia['center_of_mass']['link6_cog']['y']} ${inertia['center_of_mass']['link6_cog']['z']}" rpy="0 0 0" />
+        <mass value="${inertia['link6_mass']}" />
+        <inertia ixx="${inertia['tensor']['link6']['ixx']}" ixy="${inertia['tensor']['link6']['ixy']}" ixz="${inertia['tensor']['link6']['ixz']}" iyy="${inertia['tensor']['link6']['iyy']}" iyz="${inertia['tensor']['link6']['iyz']}" izz="${inertia['tensor']['link6']['izz']}" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/link6.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/link6.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="${prefix}link6_joint" type="revolute">
+      <origin xyz="0.057893 -0.0084026 0.0497" rpy="1.5708 0 1.4267" />
+      <parent link="${prefix}link5" />
+      <child link="${prefix}link6" />
+      <axis xyz="0 0 -1" />
+      <limit lower="-4.712" upper="4.712" effort="150" velocity="3.927" />
+      <dynamics damping="0.1" friction="0.1" />
+    </joint>
+
+  </xacro:macro>
+</robot>
