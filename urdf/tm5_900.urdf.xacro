@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://wiki.ros.org/xacro" name="tm5_900">
 
-  <!-- <webots>
+  <webots>
       <plugin type="webots_ros2_control::Ros2Control" />
-  </webots> -->
+  </webots>
 
-  <gazebo>
+  <!-- <gazebo>
     <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
       <parameters>$(find tm5_900)/config/ros2_controllers.yaml</parameters>
     </plugin>
-  </gazebo>
+  </gazebo> -->
 
   <xacro:include filename="tm5_900_macro.xacro" />
   <xacro:include filename="tm5_900.ros2_control.xacro" />
