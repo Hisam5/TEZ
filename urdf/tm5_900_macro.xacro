@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot xmlns:xacro="http://wiki.ros.org/xacro">
 
-  <xacro:macro name="tm5_900_robot" params="parent *origin prefix physical_parameters_file">
+  <xacro:macro name="tm5_900_robot" params="parent *origin prefix physical_parameters_file kinematics_parameters_file joint_limits_parameters_file">
 
     <xacro:property name="phys_params" value="${xacro.load_yaml(physical_parameters_file)}"/>
     <xacro:property name="inertia" value="${phys_params['inertia_parameters']}"/>
+
+    <xacro:property name="kin_params" value="${xacro.load_yaml(kinematics_parameters_file)}"/>
+    <xacro:property name="kinematics" value="${kin_params['kinematics']}"/>
+
+    <xacro:property name="limit_params" value="${xacro.load_yaml(joint_limits_parameters_file)}"/>
+    <xacro:property name="limits" value="${limit_params['joint_limits']}"/>
+
 
     <joint name="${prefix}base_joint" type="fixed">
       <xacro:insert_block name="origin" />
@@ -27,12 +34,12 @@
           <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
         </material>
       </visual>
-      <collision>
+      <!-- <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
           <mesh filename="package://tm5_900/meshes/base_link.STL" />
         </geometry>
-      </collision>
+      </collision> -->
     </link>
 
     <link name="${prefix}link1">
@@ -50,20 +57,24 @@
           <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
         </material>
       </visual>
-      <collision>
+      <!-- <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
           <mesh filename="package://tm5_900/meshes/link1.STL" />
         </geometry>
-      </collision>
+      </collision> -->
     </link>
 
     <joint name="${prefix}link1_joint" type="revolute">
-      <origin xyz="0 0 0.066" rpy="0 0 0" />
+      <origin xyz="${kinematics['link1']['x']} ${kinematics['link1']['y']} ${kinematics['link1']['z']}" 
+              rpy="${kinematics['link1']['roll']} ${kinematics['link1']['pitch']} ${kinematics['link1']['yaw']}" />
       <parent link="${prefix}base_link" />
       <child link="${prefix}link1" />
       <axis xyz="0 0 -1" />
-      <limit lower="-4.712" upper="4.712" effort="150" velocity="3.141" />
+      <limit lower="${limits['link1_joint']['min_position']}" 
+             upper="${limits['link1_joint']['max_position']}" 
+             effort="${limits['link1_joint']['max_effort']}" 
+             velocity="${limits['link1_joint']['max_velocity']}" />
       <dynamics damping="0.1" friction="0.1" />
     </joint>
 
@@ -82,20 +93,24 @@
           <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
         </material>
       </visual>
-      <collision>
+      <!-- <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
           <mesh filename="package://tm5_900/meshes/link2.STL" />
         </geometry>
-      </collision>
+      </collision> -->
     </link>
 
     <joint name="${prefix}link2_joint" type="revolute">
-      <origin xyz="-0.064479 -0.017456 0.0815" rpy="1.5708 0 -1.3064" />
+      <origin xyz="${kinematics['link2']['x']} ${kinematics['link2']['y']} ${kinematics['link2']['z']}" 
+              rpy="${kinematics['link2']['roll']} ${kinematics['link2']['pitch']} ${kinematics['link2']['yaw']}" />
       <parent link="${prefix}link1" />
       <child link="${prefix}link2" />
       <axis xyz="0 0 -1" />
-      <limit lower="-3.141" upper="3.141" effort="150" velocity="3.141" />
+      <limit lower="${limits['link2_joint']['min_position']}" 
+             upper="${limits['link2_joint']['max_position']}" 
+             effort="${limits['link2_joint']['max_effort']}" 
+             velocity="${limits['link2_joint']['max_velocity']}" />
       <dynamics damping="0.1" friction="0.1" />
     </joint>
 
@@ -114,20 +129,24 @@
           <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
         </material>
       </visual>
-      <collision>
+      <!-- <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
           <mesh filename="package://tm5_900/meshes/link3.STL" />
         </geometry>
-      </collision>
+      </collision> -->
     </link>
 
     <joint name="${prefix}link3_joint" type="revolute">
-      <origin xyz="-0.042946 0.42684 0" rpy="3.1416 0 -3.0413" />
+      <origin xyz="${kinematics['link3']['x']} ${kinematics['link3']['y']} ${kinematics['link3']['z']}" 
+              rpy="${kinematics['link3']['roll']} ${kinematics['link3']['pitch']} ${kinematics['link3']['yaw']}" />
       <parent link="${prefix}link2" />
       <child link="${prefix}link3" />
       <axis xyz="0 0 -1" />
-      <limit lower="-2.705" upper="2.705" effort="150" velocity="3.141" />
+      <limit lower="${limits['link3_joint']['min_position']}" 
+             upper="${limits['link3_joint']['max_position']}" 
+             effort="${limits['link3_joint']['max_effort']}" 
+             velocity="${limits['link3_joint']['max_velocity']}" />
       <dynamics damping="0.1" friction="0.1" />
     </joint>
 
@@ -146,20 +165,24 @@
           <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
         </material>
       </visual>
-      <collision>
+      <!-- <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
           <mesh filename="package://tm5_900/meshes/link4.STL" />
         </geometry>
-      </collision>
+      </collision> -->
     </link>
 
     <joint name="${prefix}link4_joint" type="revolute">
-      <origin xyz="0.2555 0.32257 -0.008" rpy="-3.1416 0 2.4717" />
+      <origin xyz="${kinematics['link4']['x']} ${kinematics['link4']['y']} ${kinematics['link4']['z']}" 
+              rpy="${kinematics['link4']['roll']} ${kinematics['link4']['pitch']} ${kinematics['link4']['yaw']}" />
       <parent link="${prefix}link3" />
       <child link="${prefix}link4" />
       <axis xyz="0 0 -1" />
-      <limit lower="-3.141" upper="3.141" effort="150" velocity="3.927" />
+      <limit lower="${limits['link4_joint']['min_position']}" 
+             upper="${limits['link4_joint']['max_position']}" 
+             effort="${limits['link4_joint']['max_effort']}" 
+             velocity="${limits['link4_joint']['max_velocity']}" />
       <dynamics damping="0.1" friction="0.1" />
     </joint>
 
@@ -178,20 +201,24 @@
           <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
         </material>
       </visual>
-      <collision>
+      <!-- <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
           <mesh filename="package://tm5_900/meshes/link5.STL" />
         </geometry>
-      </collision>
+      </collision> -->
     </link>
 
     <joint name="${prefix}link5_joint" type="revolute">
-      <origin xyz="0.011533 0.048343 0.0585" rpy="-0.53433 -1.5708 -1.2417" />
+      <origin xyz="${kinematics['link5']['x']} ${kinematics['link5']['y']} ${kinematics['link5']['z']}" 
+              rpy="${kinematics['link5']['roll']} ${kinematics['link5']['pitch']} ${kinematics['link5']['yaw']}" />
       <parent link="${prefix}link4" />
       <child link="${prefix}link5" />
       <axis xyz="0 0 -1" />
-      <limit lower="-3.141" upper="3.141" effort="150" velocity="3.927" />
+      <limit lower="${limits['link5_joint']['min_position']}" 
+             upper="${limits['link5_joint']['max_position']}" 
+             effort="${limits['link5_joint']['max_effort']}" 
+             velocity="${limits['link5_joint']['max_velocity']}" />
       <dynamics damping="0.1" friction="0.1" />
     </joint>
 
@@ -210,20 +237,24 @@
           <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
         </material>
       </visual>
-      <collision>
+      <!-- <collision>
         <origin xyz="0 0 0" rpy="0 0 0" />
         <geometry>
           <mesh filename="package://tm5_900/meshes/link6.STL" />
         </geometry>
-      </collision>
+      </collision> -->
     </link>
 
     <joint name="${prefix}link6_joint" type="revolute">
-      <origin xyz="0.057893 -0.0084026 0.0497" rpy="1.5708 0 1.4267" />
+      <origin xyz="${kinematics['link6']['x']} ${kinematics['link6']['y']} ${kinematics['link6']['z']}" 
+              rpy="${kinematics['link6']['roll']} ${kinematics['link6']['pitch']} ${kinematics['link6']['yaw']}" />
       <parent link="${prefix}link5" />
       <child link="${prefix}link6" />
       <axis xyz="0 0 -1" />
-      <limit lower="-4.712" upper="4.712" effort="150" velocity="3.927" />
+      <limit lower="${limits['link6_joint']['min_position']}" 
+             upper="${limits['link6_joint']['max_position']}" 
+             effort="${limits['link6_joint']['max_effort']}" 
+             velocity="${limits['link6_joint']['max_velocity']}" />
       <dynamics damping="0.1" friction="0.1" />
     </joint>
 

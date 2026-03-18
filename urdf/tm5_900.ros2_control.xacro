@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="tm5_900_ros2_control" params="name prefix joint_limits_parameters_file">
+
+    <xacro:property name="limit_params" value="${xacro.load_yaml(joint_limits_parameters_file)}"/>
+    <xacro:property name="limits" value="${limit_params['joint_limits']}"/>
+
+    <ros2_control name="${name}" type="system">
+      
+      <hardware>
+        <!-- <plugin>mock_components/GenericSystem</plugin> -->
+        <!-- <plugin>webots_ros2_control::Ros2ControlSystem</plugin> -->
+        <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+      </hardware>
+
+      <joint name="${prefix}link1_joint">
+        <command_interface name="position">
+          <param name="min">${limits['link1_joint']['min_position']}</param>
+          <param name="max">${limits['link1_joint']['max_position']}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="${prefix}link2_joint">
+        <command_interface name="position">
+          <param name="min">${limits['link2_joint']['min_position']}</param>
+          <param name="max">${limits['link2_joint']['max_position']}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="${prefix}link3_joint">
+        <command_interface name="position">
+          <param name="min">${limits['link3_joint']['min_position']}</param>
+          <param name="max">${limits['link3_joint']['max_position']}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="${prefix}link4_joint">
+        <command_interface name="position">
+          <param name="min">${limits['link4_joint']['min_position']}</param>
+          <param name="max">${limits['link4_joint']['max_position']}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="${prefix}link5_joint">
+        <command_interface name="position">
+          <param name="min">${limits['link5_joint']['min_position']}</param>
+          <param name="max">${limits['link5_joint']['max_position']}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="${prefix}link6_joint">
+        <command_interface name="position">
+          <param name="min">${limits['link6_joint']['min_position']}</param>
+          <param name="max">${limits['link6_joint']['max_position']}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+    </ros2_control>
+
+  </xacro:macro>
+  
+  <gazebo>
+    <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+      <parameters>$(find tm5_900)/config/ros2_controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+  
+
+</robot>
