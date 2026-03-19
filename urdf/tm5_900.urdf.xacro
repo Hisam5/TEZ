@@ -2,7 +2,9 @@
 <robot xmlns:xacro="http://wiki.ros.org/xacro" name="tm5_900">
 
   <webots>
-      <plugin type="webots_ros2_control::Ros2Control" />
+      <plugin type="webots_ros2_control::Ros2Control">
+          <parameters>$(find tm5_900)/config/ros2_controllers.yaml</parameters>
+      </plugin>
   </webots>
 
   <!-- <gazebo>

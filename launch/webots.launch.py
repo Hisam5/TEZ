@@ -17,6 +17,7 @@ def get_ros2_nodes(*args):
     package_dir = get_package_share_directory(PACKAGE_NAME)
     urdf_path = os.path.join(package_dir, 'urdf', 'tm5_900.urdf')
 
+
     # URDF Robotunu Simülasyona Enjekte Et (Spawner)
     spawn_URDF = URDFSpawner(
         name='tm5_900',
@@ -34,17 +35,18 @@ def get_ros2_nodes(*args):
         executable='spawner',
         output='screen',
         prefix=controller_manager_prefix,
-        arguments=['joint_state_broadcaster', '-c', 'controller_manager'] + controller_manager_timeout
+        # Add '/' before controller_manager
+        arguments=['joint_state_broadcaster', '-c', '/controller_manager'] + controller_manager_timeout
     )
     
-    arm_spawner = Node(
+    arm_spawner = Node( 
         package='controller_manager',
         executable='spawner',
         output='screen',
         prefix=controller_manager_prefix,
-        arguments=['arm_controller', '-c', 'controller_manager'] + controller_manager_timeout,
+        # Add '/' before controller_manager
+        arguments=['arm_controller', '-c', '/controller_manager'] + controller_manager_timeout,
     )
-    
     spawners = [jsb_spawner, arm_spawner]
 
     # İskelet (TF) Yayıncısı: WebotsController bunu otomatik olarak dolduracak
@@ -88,11 +90,14 @@ def generate_launch_description():
     # Sürücü (Driver Node)
     urdf_path = os.path.join(package_dir, 'urdf', 'tm5_900.urdf')
     controller_config = os.path.join(package_dir, 'config', 'ros2_controllers.yaml')
+
+    with open(urdf_path, 'r') as file:
+        robot_description_xml = file.read()
     
     driver = WebotsController(
         robot_name='tm5_900',
         parameters=[
-            {'robot_description': urdf_path},
+            {'robot_description': robot_description_xml},
             {'use_sim_time': True},
             {'set_robot_state_publisher': True},
             controller_config

@@ -4,7 +4,22 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="tm5_900">
+  <webots>
+    <plugin type="webots_ros2_control::Ros2Control">
+      <parameters>/home/hesham/ros2_ws/install/tm5_900/share/tm5_900/config/ros2_controllers.yaml</parameters>
+    </plugin>
+  </webots>
+  <!-- <gazebo>
+    <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+      <parameters>$(find tm5_900)/config/ros2_controllers.yaml</parameters>
+    </plugin>
+  </gazebo> -->
   <link name="world"/>
+  <joint name="fixed_to_world" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
   <joint name="base_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="world"/>
@@ -214,7 +229,9 @@
   </joint>
   <ros2_control name="tm5_900_ros2_control" type="system">
     <hardware>
+      <!-- <plugin>mock_components/GenericSystem</plugin> -->
       <plugin>webots_ros2_control::Ros2ControlSystem</plugin>
+      <!-- <plugin>gazebo_ros2_control/GazeboSystem</plugin> -->
     </hardware>
     <joint name="link1_joint">
       <command_interface name="position">
@@ -265,6 +282,4 @@
       <state_interface name="velocity"/>
     </joint>
   </ros2_control>
-  
-  
 </robot>
