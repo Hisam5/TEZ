@@ -1,4 +1,5 @@
 import os
+import xacro
 import launch
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -9,7 +10,6 @@ from launch_ros.actions import Node
 from webots_ros2_driver.urdf_spawner import URDFSpawner, get_webots_driver_node
 from webots_ros2_driver.webots_launcher import WebotsLauncher
 from webots_ros2_driver.webots_controller import WebotsController
-
 PACKAGE_NAME = 'tm5_900'
 
 # Simülasyon sıfırlandığında yeniden başlatılacak olan ROS 2 düğümleri
@@ -34,7 +34,7 @@ def get_ros2_nodes(*args):
         executable='spawner',
         output='screen',
         prefix=controller_manager_prefix,
-        arguments=['joint_state_broadcaster', '-c', 'controller_manager'] + controller_manager_timeout,
+        arguments=['joint_state_broadcaster', '-c', 'controller_manager'] + controller_manager_timeout
     )
     
     arm_spawner = Node(
