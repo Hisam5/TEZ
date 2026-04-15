@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="tm5_gripper" params="parent *origin">
+
+    <joint name="gripper_mount_joint" type="fixed">
+      <xacro:insert_block name="origin"/>
+      <parent link="${parent}" />
+      <child link="gripper_base_link" />
+    </joint>
+
+    <link name="gripper_base_link">
+      <inertial>
+        <origin xyz="0.000718498778430887 -1.74875373432082E-07 0.0459725648476832" rpy="0 0 0" />
+        <mass value="0.307675135770669" />
+        <inertia ixx="0.000259141668867471" ixy="-2.09979995789405E-10" ixz="3.31302393015316E-08" iyy="0.000261006032886084" iyz="-1.60469854174508E-09" izz="0.000169214797750628" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/gripper_base_link.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/gripper_base_link.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="righthand_link">
+      <inertial>
+        <origin xyz="-0.00681882336061863 0.0223827823514538 -0.00857761947163638" rpy="0 0 0" />
+        <mass value="0.01364966763846" />
+        <inertia ixx="5.80907207521746E-06" ixy="1.32416192549937E-06" ixz="-7.03179293152161E-07" iyy="2.71231748624374E-06" iyz="1.35062598473268E-06" izz="4.9807724616964E-06" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/righthand_link.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/righthand_link.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="righthand_joint" type="prismatic">
+      <origin xyz="0.017642 -0.01429 0.0839" rpy="1.5708 0 -1.5708" />
+      <parent link="gripper_base_link" />
+      <child link="righthand_link" />
+      <axis xyz="0 0 1" />
+      <limit lower="-0.015" upper="0.025" effort="130" velocity="0.15" />
+      <dynamics damping="0.1" friction="0.1" />
+    </joint>
+
+    <link name="lefthand_link">
+      <inertial>
+        <origin xyz="-0.00681882354154159 0.0223827823996961 -0.00857761934860912" rpy="0 0 0" />
+        <mass value="0.0136496676273574" />
+        <inertia ixx="5.80907213502822E-06" ixy="1.32416190478303E-06" ixz="-7.03179272696445E-07" iyy="2.71231751798348E-06" iyz="1.35062599298803E-06" izz="4.98077252893434E-06" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/lefthand_link.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="package://tm5_900/meshes/lefthand_link.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="lefthand_joint" type="prismatic">
+      <origin xyz="-0.01621 0.01429 0.0839" rpy="1.5708 0 1.5708" />
+      <parent link="gripper_base_link" />
+      <child link="lefthand_link" />
+      <axis xyz="0 0 1" />
+      <limit lower="-0.015" upper="0.025" effort="130" velocity="0.15" />
+      <dynamics damping="0.1" friction="0.1" />
+    </joint>
+
+  </xacro:macro>
+</robot>

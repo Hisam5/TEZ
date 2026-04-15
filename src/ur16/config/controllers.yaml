@@ -1,0 +1,25 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # 100 Hz
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    joint_trajectory_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+# Bu, Hişam'ın kullanacağı robotun kontrol ayarlarıdır (PID'siz, pozisyon kontrolü)
+joint_trajectory_controller:
+  ros__parameters:
+    joints:
+      - j0
+      - j1
+      - j2
+      - j3
+      - j4
+      - j5
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity

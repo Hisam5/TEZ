@@ -1,0 +1,44 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Kontrol güncelleme hızı (Hz)
+
+    # 1. Ana Hareket Kontrolcüsü (MoveIt'ten gelen komutları işler)
+    joint_trajectory_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+      joints:
+        - j0
+        - j1
+        - j2
+        - j3
+        - j4
+        - j5
+      command_interfaces:
+        - position
+      state_interfaces:
+        - position
+        - velocity
+      
+      # Pozisyon kontrol ayarları (Gazebo'daki fizik motoru için PID değerleri)
+      state_publish_rate: 50.0 
+      action_monitor_rate: 20.0
+      allow_partial_joints_goal: false
+      goal_tolerance:
+        j0: {position: 0.01, velocity: 0.01}
+        j1: {position: 0.01, velocity: 0.01}
+        j2: {position: 0.01, velocity: 0.01}
+        j3: {position: 0.01, velocity: 0.01}
+        j4: {position: 0.01, velocity: 0.01}
+        j5: {position: 0.01, velocity: 0.01}
+      
+      # Motor Tuning (PID) Ayarları
+      pid_gains:
+        j0: {p: 100.0, i: 0.01, d: 1.0}
+        j1: {p: 100.0, i: 0.01, d: 1.0}
+        j2: {p: 100.0, i: 0.01, d: 1.0}
+        j3: {p: 50.0, i: 0.01, d: 0.5}
+        j4: {p: 50.0, i: 0.01, d: 0.5}
+        j5: {p: 50.0, i: 0.01, d: 0.5}
+
+    # 2. Eklem Durumunu Yayınlayan Kontrolcü
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster

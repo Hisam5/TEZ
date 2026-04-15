@@ -1,0 +1,44 @@
+# TM5-900 Kinematik Parametreleri (Eklemlerin Orijin ve Rotasyon Değerleri)
+kinematics:
+  link1:
+    x: 0.0
+    y: 0.0
+    z: 0.066
+    roll: 0.0
+    pitch: 0.0
+    yaw: 0.0
+  link2:
+    x: -0.064479
+    y: -0.017456
+    z: 0.0815
+    roll: 1.5708
+    pitch: 0.0
+    yaw: -1.3064
+  link3:
+    x: -0.042946
+    y: 0.42684
+    z: 0.0
+    roll: 3.1416
+    pitch: 0.0
+    yaw: -3.0413
+  link4:
+    x: 0.2555
+    y: 0.32257
+    z: -0.008
+    roll: -3.1416
+    pitch: 0.0
+    yaw: 2.4717
+  link5:
+    x: 0.011533
+    y: 0.048343
+    z: 0.0585
+    roll: -0.53433
+    pitch: -1.5708
+    yaw: -1.2417
+  link6:
+    x: 0.057893
+    y: -0.0084026
+    z: 0.0497
+    roll: 1.5708
+    pitch: 0.0
+    yaw: 1.4267

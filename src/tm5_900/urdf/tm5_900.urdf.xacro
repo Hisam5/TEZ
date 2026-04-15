@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="tm5_900">
+
+  <webots>
+      <plugin type="webots_ros2_control::Ros2Control">
+          <parameters>$(find tm5_900)/config/ros2_controllersWithGripper.yaml</parameters>
+      </plugin>
+  </webots>
+
+  <!-- <gazebo>
+    <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+      <parameters>$(find tm5_900)/config/ros2_controllers.yaml</parameters>
+    </plugin>
+  </gazebo> -->
+
+  <xacro:include filename="tm5_900_macro.xacro" />
+  <xacro:include filename="tm5_900.ros2_control.xacro" />
+  <xacro:include filename="gripper.xacro" />
+
+
+ <link name="world"/>
+
+ <link name="gripper_center_tcp" />
+
+  <joint name="righthand_to_tcp" type="fixed">
+    <parent link="gripper_base_link"/>
+    <child link="gripper_center_tcp"/>
+    <origin xyz="0 0 0.135" rpy="0 0 0"/>
+  </joint>
+
+  <xacro:property name="physical_params_file" value="$(find tm5_900)/config/physical_parameters.yaml" />
+  <xacro:property name="kinematics_params_file" value="$(find tm5_900)/config/default_kinematics.yaml" />
+  <xacro:property name="joint_limits_params_file" value="$(find tm5_900)/config/joint_limits.yaml" />
+
+  <xacro:tm5_900_robot prefix="" parent="world" 
+    physical_parameters_file="${physical_params_file}"
+    kinematics_parameters_file="${kinematics_params_file}"
+    joint_limits_parameters_file="${joint_limits_params_file}">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </xacro:tm5_900_robot>
+
+  <xacro:tm5_gripper parent="link6">
+    <origin xyz="0.0 0.0 0.02" rpy="0 0 0" /> 
+  </xacro:tm5_gripper>
+  
+  <xacro:tm5_900_ros2_control name="tm5_900_ros2_control" prefix="" joint_limits_parameters_file="${joint_limits_params_file}" />
+
+  
+  
+</robot>

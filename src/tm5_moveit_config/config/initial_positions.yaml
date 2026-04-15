@@ -1,0 +1,10 @@
+# Default initial positions for tm5_900's ros2_control fake system
+
+initial_positions:
+  lefthand_joint: 0
+  link1_joint: 0
+  link2_joint: 0
+  link3_joint: 0
+  link4_joint: 0
+  link5_joint: 0
+  link6_joint: 0

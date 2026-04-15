@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ur16">
+
+    <link name="world"/> 
+
+    <joint name="world_joint" type="fixed">
+        <parent link="world"/>
+        <child link="base_link"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="base_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/base_link.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.50196 0.50196 0.50196 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/base_link.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+    <link name="l1">
+        <inertial>
+            <origin xyz="-0.0046617 0.064919 -2.9765E-05" rpy="0 0 0" />
+            <mass value="0.60391" />
+            <inertia ixx="0.002353" ixy="5.4163E-05" ixz="1.5509E-07" iyy="0.0015823" iyz="1.3637E-06" izz="0.0023074" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/l1.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.75294 0.75294 0.75294 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/l1.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="j0" type="revolute">
+        <origin xyz="0 0 0.0637" rpy="1.5708 0 -0.27865" />
+        <parent link="base_link" />
+        <child link="l1" />
+        <axis xyz="0 1 0" />
+        <limit lower="-3.14" upper="3.14" effort="150.0" velocity="3.14" />
+        <dynamics damping="0.1" friction="0.1"/>
+    </joint>
+
+    <link name="l2">
+        <inertial>
+            <origin xyz="-0.2145 0.13338 2.9099E-06" rpy="0 0 0" />
+            <mass value="1.5858" />
+            <inertia ixx="0.0056431" ixy="-4.2324E-07" ixz="-8.3606E-08" iyy="0.008282" iyz="1.2335E-08" izz="0.0097323" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/l2.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.75294 0.75294 0.75294 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/l2.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="j1" type="revolute">
+        <origin xyz="0 0.0815 0" rpy="-3.1416 -0.72345 -1.5708" />
+        <parent link="l1" />
+        <child link="l2" />
+        <axis xyz="0 1 0" />
+        <limit lower="-3.14" upper="3.14" effort="150.0" velocity="3.14" />
+        <dynamics damping="0.1" friction="0.1"/>
+    </joint>
+
+    <link name="l3">
+        <inertial>
+            <origin xyz="0.021277 -1.915E-05 -0.2439" rpy="0 0 0" />
+            <mass value="0.52418" />
+            <inertia ixx="0.002934" ixy="-2.8586E-07" ixz="-2.2358E-05" iyy="0.0028631" iyz="-3.1057E-07" izz="0.00079983" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/l3.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.25098 0.25098 0.25098 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/l3.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="j2" type="revolute">
+        <origin xyz="-0.429 0 0" rpy="-2.9857 0 1.5708" />
+        <parent link="l2" />
+        <child link="l3" />
+        <axis xyz="1 0 0" />
+        <limit lower="-3.14" upper="3.14" effort="150.0" velocity="3.14" />
+        <dynamics damping="0.1" friction="0.1"/>
+    </joint>
+
+    <link name="l4">
+        <inertial>
+            <origin xyz="0.087858 -0.0061462 -3.5534E-05" rpy="0 0 0" />
+            <mass value="0.20633" />
+            <inertia ixx="0.00030474" ixy="-6.8226E-07" ixz="3.1675E-08" iyy="0.00029424" iyz="1.5424E-07" izz="0.00028633" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/l4.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.75294 0.75294 0.75294 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/l4.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="j3" type="revolute">
+        <origin xyz="0.033271 0 -0.4115" rpy="-1.6624 0 0" />
+        <parent link="l3" />
+        <child link="l4" />
+        <axis xyz="1 0 0" />
+        <limit lower="-3.14" upper="3.14" effort="150.0" velocity="3.14" />
+        <dynamics damping="0.1" friction="0.1"/>
+    </joint>
+
+    <link name="l5">
+        <inertial>
+            <origin xyz="0.10483 -0.0061459 -3.5856E-05" rpy="0 0 0" />
+            <mass value="0.20634" />
+            <inertia ixx="0.00030473" ixy="-6.8916E-07" ixz="2.7167E-08" iyy="0.00029425" iyz="1.5482E-07" izz="0.00028632" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/l5.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.75294 0.75294 0.75294 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/l5.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="j4" type="revolute">
+        <origin xyz="0.089529 0 0" rpy="-1.2165 0 -1.5708" />
+        <parent link="l4" />
+        <child link="l5" />
+        <axis xyz="1 0 0" />
+        <limit lower="-3.14" upper="3.14" effort="150.0" velocity="3.14" />
+        <dynamics damping="0.1" friction="0.1"/>
+    </joint>
+
+    <link name="l6">
+        <inertial>
+            <origin xyz="0.041524 -0.09918 0.0008719" rpy="0 0 0" />
+            <mass value="0.19187" />
+            <inertia ixx="0.00017779" ixy="-2.4288E-05" ixz="-5.8881E-06" iyy="0.00035295" iyz="-2.7322E-06" izz="0.00030218" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/l6.STL" />
+            </geometry>
+            <material name="">
+                <color rgba="0.79216 0.81961 0.93333 1" />
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://ur16/meshes/l6.STL" />
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="j5" type="revolute">
+        <origin xyz="0.1065 0 0" rpy="3.1416 0.231 3.1416" />
+        <parent link="l5" />
+        <child link="l6" />
+        <axis xyz="0 1 0" />
+        <limit lower="-3.14" upper="3.14" effort="150.0" velocity="3.14" />
+        <dynamics damping="0.1" friction="0.1"/>
+    </joint>
+
+    <link name="tool0">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.01"/>
+            <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0.02" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.02 0.02 0.04"/>
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0.02" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.02 0.02 0.04"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="ee_fixed" type="fixed">
+        <parent link="l6"/>
+        <child link="tool0"/>
+        <origin xyz="0 0 0.05" rpy="0 0 0"/>
+    </joint>
+
+    <ros2_control name="GazeboSystem" type="system">
+        <hardware>
+            <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+        </hardware>
+
+        <joint name="j0">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="j1">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="j2">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="j3">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="j4">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="j5">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+    </ros2_control>
+
+    </robot>

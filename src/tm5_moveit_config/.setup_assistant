@@ -1,0 +1,25 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: tm5_900
+    relative_path: urdf/tm5_withgripper.urdf
+  srdf:
+    relative_path: config/tm5_900.srdf
+  package_settings:
+    author_name: Mekatronik183_TezGurubu
+    author_email: 1studyy1@gmail.com
+    generated_timestamp: 1776242854
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity
+  modified_urdf:
+    xacros:
+      - control_xacro
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity

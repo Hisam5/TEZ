@@ -1,0 +1,42 @@
+# TM5-900 Eklem Limitleri (Açı, Hız ve Tork Sınırları)
+joint_limits:
+  link1_joint:
+    min_position: -4.712
+    max_position: 4.712
+    max_velocity: 3.141
+    max_effort: 150.0
+  link2_joint:
+    min_position: -3.141
+    max_position: 3.141
+    max_velocity: 3.141
+    max_effort: 150.0
+  link3_joint:
+    min_position: -2.705
+    max_position: 2.705
+    max_velocity: 3.141
+    max_effort: 150.0
+  link4_joint:
+    min_position: -3.141
+    max_position: 3.141
+    max_velocity: 3.927
+    max_effort: 150.0
+  link5_joint:
+    min_position: -3.141
+    max_position: 3.141
+    max_velocity: 3.927
+    max_effort: 150.0
+  link6_joint:
+    min_position: -4.712
+    max_position: 4.712
+    max_velocity: 3.927
+    max_effort: 150.0
+  lefthand_joint:
+    min_position: -0.015
+    max_position: 0.025
+    max_velocity: 0.15
+    max_effort: 130.0
+  righthand_joint:
+    min_position: -0.015
+    max_position: 0.025
+    max_velocity: 0.15
+    max_effort: 130.0
