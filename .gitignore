@@ -1,4 +1,14 @@
-# ROS 2 build directories
+cd /home/hesham/ros2_ws
+
+# Configure user (one time)
+git config user.email "muhammedhamza.kan@gmail.com"
+git config user.name "Hisam"
+
+# Commit
+git commit -m "Initial commit: Complete ROS 2 workspace with tm5_900, tm5_moveit_config, ur16, and ur16_moveit_config packages"
+
+# Push to GitHub
+git push -u origin master# ROS 2 build directories
 build/
 install/
 log/
