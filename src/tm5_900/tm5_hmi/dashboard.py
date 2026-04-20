@@ -241,6 +241,17 @@ class DashPage(QWidget):
         self._ros.publish_cmd("STOP")
 
     # ── Veri güncelleme ───────────────────────────────────────────────────────
+#================================================================    
+#this added
+    def update_tcp(self, x, y, z, rx, ry, rz):
+        self._tcp["X"].set_value(x)
+        self._tcp["Y"].set_value(y)
+        self._tcp["Z"].set_value(z, 0, 1400)
+
+        self._tcp["RX"].set_value(rx, -180, 180)
+        self._tcp["RY"].set_value(ry, -180, 180)
+        self._tcp["RZ"].set_value(rz, -180, 180)
+#================================================================
     def update_from_ros(self, pos: list, vel: list, eff: list):
         """Gerçek ROS verileriyle eklem kartlarını güncelle."""
         for i, card in enumerate(self._jcards):
