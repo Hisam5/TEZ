@@ -3,7 +3,11 @@
 #  Pub/Sub: /joint_states  |  /tm_arm_controller/joint_trajectory
 #           /cmd_vel       |  /robot_command
 # ─────────────────────────────────────────────────────────────────────────────
-
+#===============================================================
+ #this added
+from tf2_ros import Buffer, TransformListener
+from tf_transformations import euler_from_quaternion
+#===============================================================
 import math
 import threading
 
@@ -26,6 +30,11 @@ except ImportError:
 
 
 class RosWorker(QThread):
+#===============================================================
+ #this added
+    tcp_pose_received = pyqtSignal(float, float, float, float, float, float)
+ #===============================================================
+    
     joint_state_received = pyqtSignal(list, list, list)   # pos, vel, eff
     connection_changed   = pyqtSignal(bool)
     log_message          = pyqtSignal(str, str)            # message, kind
@@ -40,7 +49,13 @@ class RosWorker(QThread):
         self._pub_t  = None   # Twist publisher
         self._pub_c  = None   # String command publisher
         self._lock   = threading.Lock()
-
+ #===============================================================
+ #this added
+        self._tf_buffer = None
+        self._tf_listener = None
+        self._base_frame = "base_link"
+        self._tool_frame = "link6"
+ #===============================================================
     # ── Ana döngü ─────────────────────────────────────────────────────────────
     def run(self):
         if not ROS_AVAILABLE:
@@ -50,6 +65,12 @@ class RosWorker(QThread):
         try:
             rclpy.init()
             self._node  = Node("tm5_hmi")
+ #===============================================================
+#this added
+            self._tf_buffer = Buffer()
+            self._tf_listener = TransformListener(self._tf_buffer, self._node)
+ #===============================================================
+  
             self._pub_j = self._node.create_publisher(
                 JointTrajectory, "/arm_controller/joint_trajectory", 10)
             self._pub_t = self._node.create_publisher(Twist,  "/cmd_vel", 10)
@@ -62,7 +83,32 @@ class RosWorker(QThread):
 
             while self._active and rclpy.ok():
                 rclpy.spin_once(self._node, timeout_sec=0.05)
+ #===============================================================
+  #this added
+                try:
+                    tf = self._tf_buffer.lookup_transform(
+                    self._base_frame,
+                    self._tool_frame,
+                    rclpy.time.Time()
+      )
 
+                    t = tf.transform.translation
+                    q = tf.transform.rotation
+
+                    roll, pitch, yaw = euler_from_quaternion([q.x, q.y, q.z, q.w])
+
+                    x = t.x * 1000.0
+                    y = t.y * 1000.0
+                    z = t.z * 1000.0
+                    rx = math.degrees(roll)
+                    ry = math.degrees(pitch)
+                    rz = math.degrees(yaw)
+
+                    self.tcp_pose_received.emit(x, y, z, rx, ry, rz)
+
+                except Exception:
+                    pass
+ #===============================================================
         except Exception as exc:
             self.connection_changed.emit(False)
             self.log_message.emit(f"ROS 2 hatası: {exc}", "err")
