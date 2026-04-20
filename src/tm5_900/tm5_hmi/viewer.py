@@ -188,6 +188,11 @@ class ViewerFrame(QFrame):
             console.warn('[HMI] Maksimum deneme sayısına ulaşıldı.');
             return;
         }}
+        if (mode) {{
+            mode.value = "mjpeg";
+            mode.dispatchEvent(new Event('change', {{ bubbles: true }}));
+            console.log("Forced mode: mjpeg");
+        }}
         if (!fillAndConnect()) {{
             console.log('[HMI] Buton hazır değil, ' + n + ' deneme kaldı...');
             setTimeout(function() {{ retry(n - 1); }}, DELAY);
