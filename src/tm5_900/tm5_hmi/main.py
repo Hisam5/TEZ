@@ -127,11 +127,20 @@ class HMI(QMainWindow):
         self._dash.log(
             "Eklem adları: " + " · ".join(j["ros"] for j in TM5_JOINTS), "info"
         )
+#================================================================
+        #this added
+        self._ros.tcp_pose_received.connect(self._on_tcp_pose)
+#================================================================
 
     # ── Navigasyon ────────────────────────────────────────────────────────────
     def _nav(self, pg: str):
         self._stack.setCurrentIndex(self._pages.get(pg, 0))
-
+#================================================================
+#this added
+    @pyqtSlot(float, float, float, float, float, float)
+    def _on_tcp_pose(self, x, y, z, rx, ry, rz):
+        self._dash.update_tcp(x, y, z, rx, ry, rz)
+#================================================================
     # ── E-STOP ────────────────────────────────────────────────────────────────
     def _estop(self):
         self._dash.log("⚠ ACİL DURUM BUTONU BASILDI", "err")
