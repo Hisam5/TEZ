@@ -71,6 +71,8 @@ class CtrlPage(QWidget):
         sw = QWidget(); sw.setStyleSheet("background:transparent;")
         sl_ly = QVBoxLayout(sw); sl_ly.setSpacing(15)
         self._sliders = []
+        
+        self._slider_active = [False] * len(self._joints)
 
         for i, j in enumerate(self._joints):
             box = QVBoxLayout(); box.setSpacing(5)
@@ -88,6 +90,11 @@ class CtrlPage(QWidget):
             s.setValue(int(j["v"] * 10))
             s.setStyleSheet(slider_style(C["a"]))
             s.valueChanged.connect(lambda val, idx=i, lbl=sv: self._on_slider(idx, val / 10, lbl))
+            
+            # Kullanıcı slider'ı tuttuğunda
+            s.sliderPressed.connect(lambda idx=i: self._on_slider_pressed(idx))
+            # Kullanıcı slider'ı bıraktığında
+            s.sliderReleased.connect(lambda idx=i: self._on_slider_released(idx))
 
             # Min/Max etiketleri
             lims = QHBoxLayout()
@@ -197,11 +204,22 @@ class CtrlPage(QWidget):
         self._joints[i]["v"] = val
         lbl.setText(f"{val:.1f}°")
         self._ros.publish_joints([j["v"] for j in self._joints])
+        
+    def _on_slider_pressed(self, idx: int):
+        """Kullanıcı slider'a tıkladığında ROS güncellemelerini durdurur."""
+        self._slider_active[idx] = True
+
+    def _on_slider_released(self, idx: int):
+        """Kullanıcı slider'ı bıraktığında ROS güncellemelerini tekrar açar."""
+        self._slider_active[idx] = False
+    
 
     # ── ROS güncellemesi (slider'ları güncelle) ───────────────────────────────
     def update_canvas_from_ros(self, angles_rad: list):
         for i, (s, lbl) in enumerate(self._sliders):
             if i < len(angles_rad):
+                if hasattr(self, '_slider_active') and self._slider_active[i]:
+                    continue
                 deg = math.degrees(angles_rad[i])
                 s.blockSignals(True); s.setValue(int(deg * 10)); s.blockSignals(False)
                 lbl.setText(f"{deg:.1f}°")

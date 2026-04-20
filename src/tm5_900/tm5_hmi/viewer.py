@@ -169,33 +169,28 @@ class ViewerFrame(QFrame):
                 break;
             }}
         }}
+        
+        if (mode) {{
+            mode.value = "mjpeg";
+            mode.dispatchEvent(new Event('change', {{ bubbles: true }}));
+            console.log("Forced mode: mjpeg");
+        }}
 
         // 2) Connect butonunu bul ve tıkla
-        var btns = document.querySelectorAll('button');
-        for (var j = 0; j < btns.length; j++) {{
-            var txt = (btns[j].textContent || '').toLowerCase().trim();
-            if (txt === 'connect' || txt.indexOf('connect') !== -1) {{
-                btns[j].click();
-                console.log('[HMI] Connect tıklandı → ' + TARGET);
-                return true;
-            }}
+        
+        const btn = document.getElementById('connect-button');
+        
+        if (btn) {{
+                setTimeout(() => {{ 
+                    btn.click();
+                    console.log("Auto connect clicked");
+                }}, 500);
         }}
-        return false;
+        
+        return true;
     }}
 
-    function retry(n) {{
-        if (n <= 0) {{
-            console.warn('[HMI] Maksimum deneme sayısına ulaşıldı.');
-            return;
-        }}
-        if (!fillAndConnect()) {{
-            console.log('[HMI] Buton hazır değil, ' + n + ' deneme kaldı...');
-            setTimeout(function() {{ retry(n - 1); }}, DELAY);
-        }}
-    }}
-
-    console.log('[HMI] ' + {self.INITIAL_WAIT} + 'ms bekleniyor (Parsing)...');
-    setTimeout(function() {{ retry(MAX); }}, {self.INITIAL_WAIT});
+    fillAndConnect();
 }})();
         """
         self.browser.page().runJavaScript(js)

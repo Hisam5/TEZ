@@ -51,7 +51,7 @@ class RosWorker(QThread):
             rclpy.init()
             self._node  = Node("tm5_hmi")
             self._pub_j = self._node.create_publisher(
-                JointTrajectory, "/tm_arm_controller/joint_trajectory", 10)
+                JointTrajectory, "/arm_controller/joint_trajectory", 10)
             self._pub_t = self._node.create_publisher(Twist,  "/cmd_vel", 10)
             self._pub_c = self._node.create_publisher(String, "/robot_command", 10)
             self._node.create_subscription(

@@ -101,8 +101,8 @@ def generate_launch_description():
     webots = WebotsLauncher(
         world=PathJoinSubstitution([package_dir, 'worlds', world]),
         ros2_supervisor=True,
-        stream='mjpeg',
-        gui=False
+        stream='mjpeg'
+        
     )
 
     urdf_path = os.path.join(package_dir, 'urdf', 'tm5_withgripper.urdf')
