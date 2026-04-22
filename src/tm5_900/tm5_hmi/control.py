@@ -8,7 +8,7 @@ import math
 
 from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QGridLayout,
-    QPushButton, QSlider, QFrame, QLabel,
+    QPushButton, QSlider, QFrame, QLabel,QTabWidget
 )
 from PyQt5.QtCore import Qt, QTimer
 
@@ -46,33 +46,73 @@ class CtrlPage(QWidget):
     # ── Sol sütun: Mod + Slider'lar ───────────────────────────────────────────
     def _make_left_col(self):
         col = QVBoxLayout(); col.setSpacing(15)
-        col.addWidget(self._make_mode_panel())
-        col.addWidget(self._make_slider_panel(), 1)
+        col.addWidget(self._make_cmd_panel())
+        #col.addWidget(self._make_slider_panel(), 1)
         return col
 
     def _make_mode_panel(self):
-        pnl = Panel("OPERATION MODE")
+        pnl = Panel("TEACH MODE")
         mg = QGridLayout(); mg.setSpacing(6)
-        self._mode_btns = []
-        for i, m in enumerate(["MANUAL", "AUTO", "TEACH", "SIMULATION"]):
-            b = QPushButton(m)
+
+        # --- 1. Satır: Activate/Inactive, Point, Delete p. ---
+        
+        # Activate Butonu
+        self._btn_activate = QPushButton("INACTIVE")
+        self._btn_activate.setCheckable(True) # Basılı kalabilme özelliği
+        self._btn_activate.setStyleSheet(self._mode_style())
+        self._btn_activate.setMinimumHeight(35)
+        self._btn_activate.toggled.connect(self._on_activate_toggled)
+        mg.addWidget(self._btn_activate, 0, 0) # 0. satır, 0. sütun
+
+        # Point Butonu (Sadece tıklanabilir, basılı kalmaz)
+        btn_point = QPushButton("POINT")
+        btn_point.setStyleSheet(self._mode_style())
+        btn_point.setMinimumHeight(35)
+        # İleride bir fonksiyona bağlamak için: btn_point.clicked.connect(self._point_action)
+        mg.addWidget(btn_point, 0, 1) # 0. satır, 1. sütun
+
+        # Delete p. Butonu (Sadece tıklanabilir, basılı kalmaz)
+        btn_delete = QPushButton("DELETE PROGRAM")
+        btn_delete.setStyleSheet(self._mode_style())
+        btn_delete.setMinimumHeight(35)
+        # İleride bir fonksiyona bağlamak için: btn_delete.clicked.connect(self._delete_action)
+        mg.addWidget(btn_delete, 0, 2) # 0. satır, 2. sütun
+
+        # --- 2. Satır: Prog1, Prog2, Prog3 ---
+        self._prog_btns = []
+        for i, prog_name in enumerate(["PROG1", "PROG2", "PROG3"]):
+            b = QPushButton(prog_name)
             b.setCheckable(True)
-            b.setChecked(m == "MANUAL")
+            b.setChecked(i == 0)  # Başlangıçta Prog1 seçili (highlighted) olsun
             b.setStyleSheet(self._mode_style())
-            b.clicked.connect(lambda _, btn=b, md=m: self._set_mode(btn, md))
             b.setMinimumHeight(35)
-            mg.addWidget(b, i // 2, i % 2)
-            self._mode_btns.append(b)
+            # Tıklandığında sadece seçilen butonu aktif yapacak fonksiyona bağla
+            b.clicked.connect(lambda _, btn=b: self._set_prog(btn))
+            self._prog_btns.append(b)
+            mg.addWidget(b, 1, i) # 1. satır, i. sütun (0, 1, 2)
+
         pnl.body.addLayout(mg)
         return pnl
+
+    # ── TEACH MODE Yardımcı Fonksiyonları ─────────────────────────────────────
+
+    def _on_activate_toggled(self, checked):
+        """Activate butonu basılıysa metni Active, değilse Inactive yapar."""
+        if checked:
+            self._btn_activate.setText("ACTIVE")
+        else:
+            self._btn_activate.setText("INACTIVE")
+
+    def _set_prog(self, active_btn):
+        """Prog butonlarından sadece tıklananı aktif (highlighted) yapar."""
+        for b in self._prog_btns:
+            b.setChecked(b is active_btn)
 
     def _make_slider_panel(self):
         pnl = Panel("MANUAL JOINT CONTROL", "6-DOF · DEG")
         sw = QWidget(); sw.setStyleSheet("background:transparent;")
         sl_ly = QVBoxLayout(sw); sl_ly.setSpacing(15)
         self._sliders = []
-        
-        self._slider_active = [False] * len(self._joints)
 
         for i, j in enumerate(self._joints):
             box = QVBoxLayout(); box.setSpacing(5)
@@ -112,26 +152,35 @@ class CtrlPage(QWidget):
     # ── Sağ sütun: Komutlar + Limitler + Görevler ─────────────────────────────
     def _make_right_col(self):
         col = QVBoxLayout(); col.setSpacing(15)
-        col.addWidget(self._make_cmd_panel())
-        col.addWidget(self._make_limits_panel())
-        col.addWidget(self._make_tasks_panel())
+        col.addWidget(self._make_mode_panel())   
+        
+        # Altta 3 Sekmeli Yapı (JOINTS, TCP, LIMITS)
+        self.tabs = QTabWidget()
+        self.tabs.setStyleSheet(self._tab_style())
+        
+        # Mevcut fonksiyonları sekme olarak ekliyoruz
+        self.tabs.addTab(self._make_slider_panel(), "JOINTS")
+        self.tabs.addTab(self._make_tcp_panel(), "TCP")
+        self.tabs.addTab(self._make_limits_panel(), "LIMITS")
+        
+        col.addWidget(self.tabs, 1) 
+                
+        # EN ALTA: Gripper Kontrol Paneli Eklendi
+        col.addWidget(self._make_gripper_panel())
         col.addStretch()
         return col
 
     def _make_cmd_panel(self):
         pnl = Panel("QUICK COMMANDS")
-        cg = QGridLayout(); cg.setSpacing(8)
+        cg = QHBoxLayout(); cg.setSpacing(8)
         for i, (ic, lb, kd) in enumerate([
             ("▶", "START",  "start"),
-            ("⏹", "STOP",   "stop"),
-            ("⏸", "PAUSE",  "normal"),
             ("⌂", "HOME",   "normal"),
             ("○", "ZERO",   "normal"),
-            ("↺", "RESET",  "normal"),
-        ]):
+            ]):
             b = CmdButton(ic, lb, kd)
             b.clicked.connect(lambda _, c=lb: self._cmd(c))
-            cg.addWidget(b, i // 3, i % 3)
+            cg.addWidget(b)
         pnl.body.addLayout(cg)
         return pnl
 
@@ -163,64 +212,142 @@ class CtrlPage(QWidget):
             pnl.body.addWidget(s)
             pnl.body.addLayout(lims2)
         return pnl
+    
+    def _make_tcp_panel(self):
+        """TCP (Kartezyen) Kontrol Sekmesi."""
+        pnl = Panel("CARTESIAN CONTROL", "TCP · MM/DEG")
+        sw = QWidget(); sw.setStyleSheet("background:transparent;")
+        sl_ly = QVBoxLayout(sw); sl_ly.setSpacing(15)
+        
+        # Eksenler ve Limitler
+        tcp_axes = [
+            ("X", -1000, 1000, 0, "mm"), ("Y", -1000, 1000, 0, "mm"), ("Z", -500, 1500, 0, "mm"),
+            ("RX", -180, 180, 0, "°"), ("RY", -180, 180, 0, "°"), ("RZ", -180, 180, 0, "°")
+        ]
 
-    def _make_tasks_panel(self):
-        pnl = Panel("PRESET TASKS", "WEBOTS")
-        for no, nm, st_ in [
-            ("01", "Home Position",      "rdy"),
-            ("02", "Pick & Place A→B",   "idle"),
-            ("05", "Custom Trajectory",  "idle"),
-        ]:
-            f = QFrame()
-            f.setStyleSheet(
-                f"QFrame{{background:rgba(0,0,0,0.25);"
-                f"border:1px solid {C['b']};border-radius:5px;}}"
-                f"QFrame:hover{{border-color:{C['bb']};}}"
-            )
-            f.setCursor(Qt.PointingHandCursor)
-            ly2 = QHBoxLayout(f); ly2.setContentsMargins(12, 10, 12, 10)
-            ly2.addWidget(make_label(no, C["t3"], 10, mono=True))
-            ly2.addWidget(make_label(nm, C["t1"], 12))
-            ly2.addStretch()
+        for name, mn, mx, val, unit in tcp_axes:
+            box = QVBoxLayout(); box.setSpacing(5)
+            hdr = QHBoxLayout()
+            hdr.addWidget(make_label(name, C["t2"], 11, bold=True))
+            hdr.addStretch()
+            sv = make_label(f"{val:.1f}{unit}", C["a"], 11, mono=True)
+            hdr.addWidget(sv)
 
-            sc, bg = {
-                "rdy":  (C["a2"], "rgba(0,255,157,0.07)"),
-                "done": (C["a"],  "rgba(0,212,170,0.07)"),
-                "idle": (C["t3"], "rgba(255,255,255,0.02)"),
-            }.get(st_, (C["t3"], "transparent"))
+            s = QSlider(Qt.Horizontal)
+            s.setRange(mn * 10, mx * 10); s.setValue(val * 10)
+            s.setStyleSheet(slider_style(C["a"]))
+            s.valueChanged.connect(lambda v, lbl=sv, u=unit: lbl.setText(f"{v/10:.1f}{u}"))
 
-            sl2 = QLabel(st_.upper())
-            sl2.setStyleSheet(
-                f"color:{sc};background:{bg};border:1px solid {sc}40;"
-                f"border-radius:10px;font-size:9px;padding:3px 8px;"
-                f"font-family:'Share Tech Mono';"
-            )
-            ly2.addWidget(sl2)
-            pnl.body.addWidget(f)
+            box.addLayout(hdr); box.addWidget(s)
+            sl_ly.addLayout(box)
+
+        pnl.body.addWidget(sw)
         return pnl
+
+    def _tab_style(self) -> str:
+        """Sekmelerin koyu tema tasarımı."""
+        return (
+            f"QTabWidget::pane {{ border: 1px solid {C['b']}; border-radius: 4px; top: -1px; }}"
+            f"QTabBar::tab {{ background: {C['card2']}; border: 1px solid {C['b']}; "
+            f"min-width: 90px; padding: 8px; color: {C['t3']}; "
+            f"font-family: 'Share Tech Mono'; font-size: 11px; margin-right: 2px; "
+            f"border-top-left-radius: 4px; border-top-right-radius: 4px; }}"
+            f"QTabBar::tab:selected {{ background: {C['card']}; color: {C['a']}; border-bottom-color: {C['card']}; }}"
+            f"QTabBar::tab:hover {{ color: {C['a']}; }}"
+        )
+
+    def _make_gripper_panel(self):
+        """Tutucu (Gripper) Kontrol Paneli."""
+        pnl = Panel("GRIPPER CONTROL")
+        ly = QHBoxLayout()
+        ly.setSpacing(10)
+        
+        # OPEN ve CLOSE butonlarını oluşturuyoruz
+        for txt in ["OPEN", "CLOSE"]:
+            btn = QPushButton(txt)
+            # Daha önce yaptığımız beyaz yazılı ve tıklama efektli stil
+            btn.setStyleSheet(self._mode_style())
+            btn.setMinimumHeight(45) # Biraz daha belirgin olması için yükseklik verdik
+            
+            # Tıklandığında ROS üzerinden komut göndermek istersen:
+            # btn.clicked.connect(lambda _, t=txt: self._ros.publish_cmd(f"GRIPPER:{t}"))
+            
+            ly.addWidget(btn)
+            
+        pnl.body.addLayout(ly)
+        return pnl
+    
+    # def _make_tasks_panel(self):
+    #     pnl = Panel("PRESET TASKS", "WEBOTS")
+    #     for no, nm, st_ in [
+    #         ("01", "Home Position",      "rdy"),
+    #         ("02", "Pick & Place A→B",   "idle"),
+    #         ("05", "Custom Trajectory",  "idle"),
+    #     ]:
+    #         f = QFrame()
+    #         f.setStyleSheet(
+    #             f"QFrame{{background:rgba(0,0,0,0.25);"
+    #             f"border:1px solid {C['b']};border-radius:5px;}}"
+    #             f"QFrame:hover{{border-color:{C['bb']};}}"
+    #         )
+    #         f.setCursor(Qt.PointingHandCursor)
+    #         ly2 = QHBoxLayout(f); ly2.setContentsMargins(12, 10, 12, 10)
+    #         ly2.addWidget(make_label(no, C["t3"], 10, mono=True))
+    #         ly2.addWidget(make_label(nm, C["t1"], 12))
+    #         ly2.addStretch()
+
+    #         sc, bg = {
+    #             "rdy":  (C["a2"], "rgba(0,255,157,0.07)"),
+    #             "done": (C["a"],  "rgba(0,212,170,0.07)"),
+    #             "idle": (C["t3"], "rgba(255,255,255,0.02)"),
+    #         }.get(st_, (C["t3"], "transparent"))
+
+    #         sl2 = QLabel(st_.upper())
+    #         sl2.setStyleSheet(
+    #             f"color:{sc};background:{bg};border:1px solid {sc}40;"
+    #             f"border-radius:10px;font-size:9px;padding:3px 8px;"
+    #             f"font-family:'Share Tech Mono';"
+    #         )
+    #         ly2.addWidget(sl2)
+    #         pnl.body.addWidget(f)
+    #     return pnl
 
     # ── Slider callback ───────────────────────────────────────────────────────
     def _on_slider(self, i: int, val: float, lbl):
         self._joints[i]["v"] = val
         lbl.setText(f"{val:.1f}°")
-        self._ros.publish_joints([j["v"] for j in self._joints])
+        
+        self._is_planning = True
+        # EĞER PLANLAMA MODUNDAYSAK (Kullanıcı slider'ı tutuyorsa):
+        # Gerçek robotu değil, RViz'deki hayalet robotu hareket ettir!
+        if getattr(self, '_is_planning', False):
+            angles_deg = [j["v"] for j in self._joints]
+            angles_rad = [math.radians(deg) for deg in angles_deg]
+            self._ros.publish_ghost_robot(angles_rad)
+        #self._ros.publish_joints([j["v"] for j in self._joints])
+        #ROS'a eklem açılarını yayınla dierk siderden değil tüm değişikliği yaptıktan
+        #sonra START buttona basildığında ÇARPIŞMA KONTROLÜYLE birlikte hareket etmesi sağlanacak 
         
     def _on_slider_pressed(self, idx: int):
         """Kullanıcı slider'a tıkladığında ROS güncellemelerini durdurur."""
-        self._slider_active[idx] = True
+        self._is_planning = True    
+        
 
     def _on_slider_released(self, idx: int):
         """Kullanıcı slider'ı bıraktığında ROS güncellemelerini tekrar açar."""
-        self._slider_active[idx] = False
+        pass
     
 
     # ── ROS güncellemesi (slider'ları güncelle) ───────────────────────────────
     def update_canvas_from_ros(self, angles_rad: list):
+        
+        if getattr(self, '_is_planning', False):
+            return
+        
         for i, (s, lbl) in enumerate(self._sliders):
             if i < len(angles_rad):
-                if hasattr(self, '_slider_active') and self._slider_active[i]:
-                    continue
-                deg = math.degrees(angles_rad[i])
+                deg = math.degrees(angles_rad[i]) 
+                self._joints[i]["v"] = deg
                 s.blockSignals(True); s.setValue(int(deg * 10)); s.blockSignals(False)
                 lbl.setText(f"{deg:.1f}°")
 
@@ -228,11 +355,12 @@ class CtrlPage(QWidget):
     def _mode_style(self) -> str:
         return (
             f"QPushButton{{background:transparent;border:1px solid {C['b']};"
-            f"border-radius:4px;color:{C['t2']};font-family:'Share Tech Mono';"
-            f"font-size:11px;letter-spacing:.12em;padding:5px 10px;}}"
-            f"QPushButton:checked{{background:rgba(0,212,170,0.09);"
+            f"border-radius:4px;color:White;font-family:'Share Tech Mono';"
+            f"font-size:12px;letter-spacing:.12em;padding:5px 10px;}}"
+            f"QPushButton:checked{{background:rgba(0,212,170,0.15);"
             f"border-color:{C['a']};color:{C['a']};}}"
             f"QPushButton:hover{{border-color:{C['a']};color:{C['a']};}}"
+            f"QPushButton:pressed{{background:rgba(255,255,255,0.2);}}"
         )
 
     def _set_mode(self, active_btn, mode: str):
@@ -242,7 +370,22 @@ class CtrlPage(QWidget):
 
     # ── Komut gönderme ────────────────────────────────────────────────────────
     def _cmd(self, c: str):
-        self._ros.publish_cmd(c)
+        self._is_planning = False
+        
+        if c == "START":
+            print("[HMI] START: Hedef açılar MoveIt'e iletiliyor...")
+            print(f" -> Hedef Açı (Radyan) : {self._joints}")
+            # Slider'daki mevcut 6 değeri (derece) al, radyana çevir ve gönder
+            angles_deg = [s.value() / 10.0 for s, _lbl in self._sliders]
+            angles_rad = [math.radians(deg) for deg in angles_deg]
+            
+            print(f" -> Hedef Açı (Radyan) : {angles_rad}")
+
+            self._ros.send_moveit_goal(angles_rad)
+        else:
+            # Diğer butonlar (STOP, PAUSE vb.) eski mantıkla çalışmaya devam etsin
+            self._ros.publish_cmd(c)
+        
 
     # ── Joystick (ileride kullanılabilir) ─────────────────────────────────────
     def _joy_stop(self):

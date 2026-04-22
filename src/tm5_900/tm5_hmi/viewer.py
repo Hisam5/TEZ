@@ -18,6 +18,10 @@ from widgets import make_label
 
 class _WebPage(QWebEnginePage):
     def javaScriptConsoleMessage(self, level, msg, line, src):
+        
+        if "Unknown message received: \"time:" in msg:
+            return  # Webots'tan gelen zaman damgası mesajlarını görmezden gel
+        
         tag = ["DBG", "INF", "WRN", "ERR"][level] if level < 4 else "???"
         print(f"  [JS:{tag} L{line}] {msg}")
 
@@ -149,6 +153,7 @@ class ViewerFrame(QFrame):
         ws_url = f"ws://{self._win_ip}:{self.WEBOTS_PORT}"
         js = f"""
 (function() {{
+    
     var TARGET = '{ws_url}';
     var MAX    = {self.MAX_RETRIES};
     var DELAY  = {self.RETRY_INTERVAL};

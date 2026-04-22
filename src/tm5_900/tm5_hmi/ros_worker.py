@@ -24,6 +24,14 @@ try:
     from std_msgs.msg import String
     from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
     from builtin_interfaces.msg import Duration
+    
+    from rclpy.action import ActionClient
+    from moveit_msgs.action import MoveGroup
+    from moveit_msgs.msg import Constraints, JointConstraint
+    
+    from moveit_msgs.msg import DisplayRobotState, RobotState
+    from sensor_msgs.msg import JointState
+    
     ROS_AVAILABLE = True
 except ImportError:
     ROS_AVAILABLE = False
@@ -48,6 +56,9 @@ class RosWorker(QThread):
         self._pub_j  = None   # JointTrajectory publisher
         self._pub_t  = None   # Twist publisher
         self._pub_c  = None   # String command publisher
+        
+        self.move_action_client = None #MoveIt Client referansı
+        
         self._lock   = threading.Lock()
  #===============================================================
  #this added
@@ -75,6 +86,11 @@ class RosWorker(QThread):
                 JointTrajectory, "/arm_controller/joint_trajectory", 10)
             self._pub_t = self._node.create_publisher(Twist,  "/cmd_vel", 10)
             self._pub_c = self._node.create_publisher(String, "/robot_command", 10)
+            
+            self._pub_ghost = self._node.create_publisher(
+                DisplayRobotState, '/display_robot_state', 10) # MoveIt için hayalet robot yayıncısı
+            
+            self.move_action_client = ActionClient(self._node, MoveGroup, 'move_action')
             self._node.create_subscription(
                 JointState, "/joint_states", self._js_cb, 10)
 
@@ -125,6 +141,43 @@ class RosWorker(QThread):
         self.joint_state_received.emit(pos, vel, eff)
 
     # ── Publish yardımcıları ──────────────────────────────────────────────────
+    def send_moveit_goal(self, joint_angles_rad: list):
+        """Arayüzden gelen radyan cinsi açıları MoveIt'e güvenli planlama için gönderir."""
+        if not self.move_action_client:
+            self.log_message.emit("MoveIt Action Client tanımlı değil!", "err")
+            return
+
+        # MoveIt sunucusunun açık olup olmadığını kontrol et
+        if not self.move_action_client.wait_for_server(timeout_sec=1.0):
+            self.log_message.emit("MoveIt 'move_action' sunucusu bulunamadı!", "err")
+            return
+
+        # --- EKLENEN KISIM BAŞLANGICI: MoveIt Yörünge Hedefi Gönderme Metodu ---
+        #Jointlarin hiz limitleri scale yapilmis olarak gonderilir, bu sayede arayuzden gelen komutlar guvenli hale gelir
+        goal_msg = MoveGroup.Goal()
+        goal_msg.request.group_name = "tm5_arm" # SRDF dosyasındaki grup adı
+        goal_msg.request.num_planning_attempts = 3
+        goal_msg.request.allowed_planning_time = 3.0
+        goal_msg.request.max_velocity_scaling_factor = 0.5      # %50 Hız (Güvenlik için)
+        goal_msg.request.max_acceleration_scaling_factor = 0.5  # %50 İvme
+
+        constraints = Constraints() 
+        for i, angle in enumerate(joint_angles_rad): # Gelen radyan cinsinden açıları MoveIt'in JointConstraint formatına dönüştür
+            jc = JointConstraint()
+            jc.joint_name = self.JOINT_NAMES[i]
+            jc.position = angle
+            jc.tolerance_above = 0.005 # Hassasiyet toleransları
+            jc.tolerance_below = 0.005
+            jc.weight = 1.0
+            constraints.joint_constraints.append(jc)
+
+        goal_msg.request.goal_constraints.append(constraints)
+
+        self.log_message.emit(f"MoveIt hedefe gidiyor...", "ok")
+        # Planı asenkron (arayüzü dondurmadan) gönder
+        self.move_action_client.send_goal_async(goal_msg)
+        # --- EKLENEN KISIM SONU ---
+    
     def publish_joints(self, angles_deg: list):
         """Derece cinsinden 6 eklem açısını JointTrajectory olarak yayınla."""
         if not self._pub_j:
@@ -161,6 +214,21 @@ class RosWorker(QThread):
         msg.data = cmd
         with self._lock:
             self._pub_c.publish(msg)
+            
+    def publish_ghost_robot(self, angles_rad: list): # MoveIt için hayalet robot yayınlama metodu
+        """Arayüzdeki anlık slider konumlarını RViz2'deki hayalet robota gönderir."""
+        if not hasattr(self, '_pub_ghost') or not self._pub_ghost:
+            return
+        
+        msg = DisplayRobotState()
+        js = JointState()
+        js.name = self.JOINT_NAMES
+        js.position = angles_rad
+        
+        msg.state.joint_state = js
+        
+        with self._lock:
+            self._pub_ghost.publish(msg)
 
     # ── Temiz kapatma ─────────────────────────────────────────────────────────
     def stop(self):

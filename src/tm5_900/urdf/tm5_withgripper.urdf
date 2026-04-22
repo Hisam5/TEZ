@@ -232,6 +232,8 @@
     <origin rpy="0 0 0" xyz="0.0 0.0 0.02"/>
     <parent link="link6"/>
     <child link="gripper_base_link"/>
+    <dynamics damping="0" friction="0"/>
+
   </joint>
   <link name="gripper_base_link">
     <inertial>
@@ -328,6 +330,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
     <joint name="link2_joint">
       <command_interface name="position">
@@ -336,6 +339,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
     <joint name="link3_joint">
       <command_interface name="position">
@@ -344,6 +348,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
     <joint name="link4_joint">
       <command_interface name="position">
@@ -352,6 +357,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
     <joint name="link5_joint">
       <command_interface name="position">
@@ -360,6 +366,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
     <joint name="link6_joint">
       <command_interface name="position">
@@ -368,6 +375,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
     <joint name="lefthand_joint">
       <command_interface name="position">
@@ -376,6 +384,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
     <joint name="righthand_joint">
       <command_interface name="position">
@@ -384,6 +393,7 @@
       </command_interface>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
   </ros2_control>
 </robot>

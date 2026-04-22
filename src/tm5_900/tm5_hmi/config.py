@@ -24,10 +24,10 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width:0; }}
 """
 
 TM5_JOINTS = [
-    {"id": "J1", "ros": "link1_joint", "nm": "Shoulder 1", "mn": -270, "mx":  270, "v":   0},
-    {"id": "J2", "ros": "link2_joint", "nm": "Shoulder 2", "mn": -180, "mx":  180, "v":   0},
-    {"id": "J3", "ros": "link3_joint", "nm": "Elbow",      "mn": -155, "mx":  155, "v":  90},
-    {"id": "J4", "ros": "link4_joint", "nm": "Wrist 1",    "mn": -180, "mx":  180, "v":   0},
-    {"id": "J5", "ros": "link5_joint", "nm": "Wrist 2",    "mn": -180, "mx":  180, "v":  90},
-    {"id": "J6", "ros": "link6_joint", "nm": "Wrist 3",    "mn": -270, "mx":  270, "v":   0},
+    {"id": "J1", "ros": "link1_joint", "nm": "Shoulder 1", "mn": -269, "mx":  269, "v":   0},
+    {"id": "J2", "ros": "link2_joint", "nm": "Shoulder 2", "mn": -179, "mx":  179, "v":   0},
+    {"id": "J3", "ros": "link3_joint", "nm": "Elbow",      "mn": -154, "mx":  154, "v":  90},
+    {"id": "J4", "ros": "link4_joint", "nm": "Wrist 1",    "mn": -179, "mx":  179, "v":   0},
+    {"id": "J5", "ros": "link5_joint", "nm": "Wrist 2",    "mn": -179, "mx":  179, "v":  90},
+    {"id": "J6", "ros": "link6_joint", "nm": "Wrist 3",    "mn": -269, "mx":  269, "v":   0},
 ]
