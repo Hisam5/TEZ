@@ -14,7 +14,7 @@ from widgets import make_label
 
 class TopBar(QFrame):
     nav_changed   = pyqtSignal(str)   # "dash" | "ctrl"
-    estop_pressed = pyqtSignal()
+    run_sim_pressed = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -80,8 +80,8 @@ class TopBar(QFrame):
         )
         main.addWidget(self.clock)
 
-        # ── E-STOP ────────────────────────────────────────────────────────
-        es = QPushButton("⬛ E-STOP")
+        # ── RUN_SIM ────────────────────────────────────────────────────────
+        es = QPushButton("RUN SIM")
         es.setStyleSheet(
             f"QPushButton{{background:rgba(255,61,90,0.1);border:2px solid {C['red']};"
             f"border-radius:4px;color:{C['red']};font-family:'Rajdhani';font-size:12px;"
@@ -89,7 +89,7 @@ class TopBar(QFrame):
             f"QPushButton:hover{{background:rgba(255,61,90,0.22);}}"
             f"QPushButton:pressed{{background:{C['red']};color:#fff;}}"
         )
-        es.clicked.connect(self.estop_pressed)
+        es.clicked.connect(self.run_sim_pressed)
         main.addWidget(es)
 
     # ── Nav buton stili ────────────────────────────────────────────────────────

@@ -271,7 +271,7 @@ class RosWorker(QThread):
         with self._lock:
             self._pub_t.publish(msg)
 
-    def publish_cmd(self, cmd: str):
+    def publish_cmd(self, cmd: str): # 
         """String komutunu /robot_command'a gönder."""
         if not self._pub_c:
             return

@@ -89,7 +89,7 @@ class HMI(QMainWindow):
         # TopBar
         self._tb = TopBar()
         self._tb.nav_changed.connect(self._nav)
-        self._tb.estop_pressed.connect(self._estop)
+        self._tb.estop_pressed.connect(self._run_sim)
         root.addWidget(self._tb)
 
         # Sayfa yığını
@@ -143,11 +143,11 @@ class HMI(QMainWindow):
         self._ctrl.update_tcp_from_ros(x, y, z, rx, ry, rz)
 #================================================================
     # ── E-STOP ────────────────────────────────────────────────────────────────
-    def _estop(self):
-        self._dash.log("⚠ ACİL DURUM BUTONU BASILDI", "err")
+    def _run_sim(self):
+        self._dash.log("Simülasyon başlatılıyor...", "info")
         self._ros.publish_twist(0, 0, 0, 0)
-        self._ros.publish_cmd("ESTOP")
-        self._dash._sc_state.set_value("E-STOP", C["red"])
+        self._ros.publish_cmd("RUN_SIM")
+        self._dash._sc_state.set_value("", C["red"])
 
     # ── ROS sinyal işleyicileri ───────────────────────────────────────────────
     @pyqtSlot(bool)
