@@ -5,11 +5,13 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 import math
+import subprocess
 
 from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QGridLayout,
     QPushButton, QSlider, QFrame, QLabel,QTabWidget
 )
+from PyQt5.QtGui import QWindow
 from PyQt5.QtCore import Qt, QTimer
 
 from config     import C
@@ -35,9 +37,9 @@ class CtrlPage(QWidget):
         self._build_ui()
 
     # ── Ana düzen ─────────────────────────────────────────────────────────────
-    def _build_ui(self):
+    def _build_ui(self): #
         ml = QHBoxLayout(self)
-        ml.setContentsMargins(15, 15, 15, 15)
+        ml.setContentsMargins(15, 15, 15, 15) 
         ml.setSpacing(15)
 
         ml.addLayout(self._make_left_col(), 1)
@@ -47,6 +49,7 @@ class CtrlPage(QWidget):
     def _make_left_col(self):
         col = QVBoxLayout(); col.setSpacing(15)
         col.addWidget(self._make_cmd_panel())
+        col.addWidget(self._make_rviz_panel(),1)
         #col.addWidget(self._make_slider_panel(), 1)
         return col
 
@@ -148,6 +151,8 @@ class CtrlPage(QWidget):
 
         pnl.body.addWidget(sw)
         return pnl
+    
+    
 
     # ── Sağ sütun: Komutlar + Limitler + Görevler ─────────────────────────────
     def _make_right_col(self):
@@ -219,6 +224,7 @@ class CtrlPage(QWidget):
         sw = QWidget(); sw.setStyleSheet("background:transparent;")
         sl_ly = QVBoxLayout(sw); sl_ly.setSpacing(15)
         
+        self._tcp_sliders = {} #new added
         # Eksenler ve Limitler
         tcp_axes = [
             ("X", -1000, 1000, 0, "mm"), ("Y", -1000, 1000, 0, "mm"), ("Z", -500, 1500, 0, "mm"),
@@ -238,9 +244,10 @@ class CtrlPage(QWidget):
             s.setStyleSheet(slider_style(C["a"]))
             s.valueChanged.connect(lambda v, lbl=sv, u=unit: lbl.setText(f"{v/10:.1f}{u}"))
 
+            s.sliderPressed.connect(lambda: setattr(self, '_is_planning', True))#new added
             box.addLayout(hdr); box.addWidget(s)
             sl_ly.addLayout(box)
-
+            self._tcp_sliders[name] = s #new added
         pnl.body.addWidget(sw)
         return pnl
 
@@ -312,6 +319,85 @@ class CtrlPage(QWidget):
     #         pnl.body.addWidget(f)
     #     return pnl
 
+    
+    def _make_rviz_panel(self):
+        pnl = Panel("3D GHOST PREVIEW", "RVIZ2")
+        
+        # RViz'in gömüleceği siyah ekran kutusu
+        self.rviz_container = QWidget()
+        self.rviz_container.setMinimumHeight(220)  # Yüksekliği ayarlayabilirsin
+        self.rviz_container.setStyleSheet(f"background:rgba(0,0,0,0.4); border:1px solid {C['b']}; border-radius:5px;")
+        
+        # İlk açıldığında görünecek bilgi metni
+        ly = QVBoxLayout(self.rviz_container)
+        info_lbl = make_label("RViz2 Ekranı Harici Olarak Çalışıyor\n\nArayüze Gömmek İçin Butona Basın", C["t3"], 10, mono=True)
+        info_lbl.setAlignment(Qt.AlignCenter)
+        ly.addWidget(info_lbl)
+        
+        # Gömme Hilesini Tetikleyecek Buton
+        btn_embed = QPushButton("⚲ EMBED RVIZ WINDOW")
+        btn_embed.setStyleSheet(self._mode_style()) # Sol taraftaki butonların stilini kullandık
+        btn_embed.clicked.connect(self._try_embed_rviz)
+        
+        pnl.body.addWidget(self.rviz_container)
+        pnl.body.addWidget(btn_embed)
+        return pnl
+
+    def _try_embed_rviz(self):
+        """X11 Window Reparenting Hilesi: RViz2 penceresini zorla PyQt5 içine alır."""
+        try:
+            # xdotool komutu ile "rviz2" sınıfına sahip pencerenin ID'sini bul
+            out = subprocess.check_output(["xdotool", "search", "--class", "rviz2"]).decode('utf-8').strip()
+            win_id_str = out.split('\n')[0]
+            win_id = int(win_id_str)
+            
+            # Pencereyi PyQt5 nesnesi haline getir
+            window = QWindow.fromWinId(win_id)
+            rviz_widget = QWidget.createWindowContainer(window)
+            
+            # Container'ın içindeki eski bilgi etiketini sil
+            for i in reversed(range(self.rviz_container.layout().count())): 
+                self.rviz_container.layout().itemAt(i).widget().setParent(None)
+                
+            # RViz2 penceresini kutunun içine sıkıştır
+            self.rviz_container.layout().addWidget(rviz_widget)
+            print("\n[HMI] BAŞARILI: RViz2 penceresi arayüze gömüldü!")
+            
+        except Exception as e:
+            print(f"\n[HATA] RViz2 penceresi bulunamadı veya gömülemedi: {e}")
+            print("[ÇÖZÜM] Terminalde 'xdotool' aracının kurulu olduğundan emin olun:")
+            print("Komut: sudo apt install xdotool\n")
+    
+    # ── ROS güncellemesi (TCP pozisyonunu güncelle) ───────────────────────────────
+    def update_tcp_from_ros(self, x, y, z, rx, ry, rz):
+        """Updates the TCP sliders with real-time TF data from ROS."""
+        # If the user is currently dragging a slider, do NOT overwrite their target
+        if getattr(self, '_is_planning', False):
+            return
+            
+        if not hasattr(self, '_tcp_sliders'):
+            return
+        # Block signals briefly so setting the value doesn't trigger endless loops
+        for s in self._tcp_sliders.values():
+            s.blockSignals(True)
+        self._tcp_sliders["X"].setValue(int(x * 10))
+        self._tcp_sliders["Y"].setValue(int(y * 10))
+        self._tcp_sliders["Z"].setValue(int(z * 10))
+        self._tcp_sliders["RX"].setValue(int(rx * 10))
+        self._tcp_sliders["RY"].setValue(int(ry * 10))
+        self._tcp_sliders["RZ"].setValue(int(rz * 10))
+        for s in self._tcp_sliders.values():
+            s.blockSignals(False)
+            
+        # Manually trigger the label update for the new values
+        self._tcp_sliders["X"].valueChanged.emit(int(x * 10))
+        self._tcp_sliders["Y"].valueChanged.emit(int(y * 10))
+        self._tcp_sliders["Z"].valueChanged.emit(int(z * 10))
+        self._tcp_sliders["RX"].valueChanged.emit(int(rx * 10))
+        self._tcp_sliders["RY"].valueChanged.emit(int(ry * 10))
+        self._tcp_sliders["RZ"].valueChanged.emit(int(rz * 10))
+
+            
     # ── Slider callback ───────────────────────────────────────────────────────
     def _on_slider(self, i: int, val: float, lbl):
         self._joints[i]["v"] = val
@@ -320,8 +406,8 @@ class CtrlPage(QWidget):
         self._is_planning = True
         # EĞER PLANLAMA MODUNDAYSAK (Kullanıcı slider'ı tutuyorsa):
         # Gerçek robotu değil, RViz'deki hayalet robotu hareket ettir!
-        if getattr(self, '_is_planning', False):
-            angles_deg = [j["v"] for j in self._joints]
+        if hasattr(self, '_sliders') and len(self._sliders) == len(self._joints): #d
+            angles_deg = [s.value() / 10.0 for s, _lbl in self._sliders]
             angles_rad = [math.radians(deg) for deg in angles_deg]
             self._ros.publish_ghost_robot(angles_rad)
         #self._ros.publish_joints([j["v"] for j in self._joints])
@@ -373,19 +459,30 @@ class CtrlPage(QWidget):
         self._is_planning = False
         
         if c == "START":
-            print("[HMI] START: Hedef açılar MoveIt'e iletiliyor...")
-            print(f" -> Hedef Açı (Radyan) : {self._joints}")
-            # Slider'daki mevcut 6 değeri (derece) al, radyana çevir ve gönder
-            angles_deg = [s.value() / 10.0 for s, _lbl in self._sliders]
-            angles_rad = [math.radians(deg) for deg in angles_deg]
+            active_tab = self.tabs.tabText(self.tabs.currentIndex())
             
-            print(f" -> Hedef Açı (Radyan) : {angles_rad}")
-
-            self._ros.send_moveit_goal(angles_rad)
+            if active_tab == "JOINTS":
+                print("[HMI] START: Joint hedefleri MoveIt'e iletiliyor...")
+                angles_deg = [s.value() / 10.0 for s, _lbl in self._sliders]
+                angles_rad = [math.radians(deg) for deg in angles_deg]
+                self._ros.send_moveit_goal(angles_rad)
+                
+            elif active_tab == "TCP":
+                print("[HMI] START: Kartezyen (TCP) hedefleri MoveIt'e iletiliyor...")
+                
+                # Sliders output integers (value * 10). 
+                # Convert mm to meters (for MoveIt XYZ) and degrees to radians (for MoveIt RPY)
+                x = (self._tcp_sliders["X"].value() / 10.0) / 1000.0
+                y = (self._tcp_sliders["Y"].value() / 10.0) / 1000.0
+                z = (self._tcp_sliders["Z"].value() / 10.0) / 1000.0
+                
+                rx = math.radians(self._tcp_sliders["RX"].value() / 10.0)
+                ry = math.radians(self._tcp_sliders["RY"].value() / 10.0)
+                rz = math.radians(self._tcp_sliders["RZ"].value() / 10.0)
+                
+                self._ros.send_moveit_cartesian_goal(x, y, z, rx, ry, rz)
         else:
-            # Diğer butonlar (STOP, PAUSE vb.) eski mantıkla çalışmaya devam etsin
             self._ros.publish_cmd(c)
-        
 
     # ── Joystick (ileride kullanılabilir) ─────────────────────────────────────
     def _joy_stop(self):

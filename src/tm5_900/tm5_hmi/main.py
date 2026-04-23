@@ -140,6 +140,7 @@ class HMI(QMainWindow):
     @pyqtSlot(float, float, float, float, float, float)
     def _on_tcp_pose(self, x, y, z, rx, ry, rz):
         self._dash.update_tcp(x, y, z, rx, ry, rz)
+        self._ctrl.update_tcp_from_ros(x, y, z, rx, ry, rz)
 #================================================================
     # ── E-STOP ────────────────────────────────────────────────────────────────
     def _estop(self):
