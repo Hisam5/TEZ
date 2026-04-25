@@ -1,20 +1,22 @@
 # ─────────────────────────────────────────────────────────────────────────────
-#  topbar.py  —  Üst navigasyon barı
-#  DASHBOARD / CONTROL  |  ROS durum pill'i  |  Saat  |  E-STOP
+#  topbar.py  —  Üst navigasyon barı  (v2.2)
+#
+#  DEĞİŞİKLİKLER:
+#   • set_sim_state("STOPPING") durumu eklendi — turuncu, disabled
+#   • LOADING ve STOPPING'de buton setEnabled(False)
+#   • IDLE ve RUNNING'de buton setEnabled(True)
 # ─────────────────────────────────────────────────────────────────────────────
 
 from datetime import datetime
-
 from PyQt5.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QLabel, QPushButton
 from PyQt5.QtCore    import Qt, pyqtSignal
-
 from config  import C
 from widgets import make_label
 
 
 class TopBar(QFrame):
-    nav_changed   = pyqtSignal(str)   # "dash" | "ctrl"
-    run_sim_pressed = pyqtSignal()
+    nav_changed        = pyqtSignal(str)
+    sim_toggle_pressed = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -26,7 +28,6 @@ class TopBar(QFrame):
         main = QHBoxLayout(self)
         main.setContentsMargins(18, 0, 18, 0)
 
-        # ── Logo + proje adı ──────────────────────────────────────────────
         logo = QLabel("TM")
         logo.setFixedSize(32, 32)
         logo.setAlignment(Qt.AlignCenter)
@@ -34,16 +35,13 @@ class TopBar(QFrame):
             f"color:{C['a']};border:2px solid {C['a']};border-radius:5px;"
             f"font-family:'Rajdhani';font-size:14px;font-weight:700;background:transparent;"
         )
-
         name = QLabel(f"TM5-900 <span style='color:{C['a']}'> CONTROL</span>")
         name.setTextFormat(Qt.RichText)
         name.setStyleSheet(
             f"font-family:'Rajdhani';font-size:20px;font-weight:700;"
             f"color:{C['t1']};background:transparent;"
         )
-        sub = QLabel(
-            "6-DOF COBOT (3D PRINTED CHASSIS) · HMI v2.0  |  DEV: HAMZA & AHMET"
-        )
+        sub = QLabel("6-DOF COBOT (3D PRINTED CHASSIS) · HMI v2.2  |  DEV: HAMZA & AHMET")
         sub.setStyleSheet(
             f"font-family:'Share Tech Mono';font-size:9px;color:{C['t3']};"
             f"letter-spacing:.18em;background:transparent;"
@@ -52,7 +50,6 @@ class TopBar(QFrame):
         info_col.addWidget(name); info_col.addWidget(sub)
         main.addWidget(logo); main.addLayout(info_col); main.addStretch()
 
-        # ── Navigasyon butonları ──────────────────────────────────────────
         self._btn_dash = QPushButton("DASHBOARD")
         self._btn_ctrl = QPushButton("CONTROL")
         for btn, pg in [(self._btn_dash, "dash"), (self._btn_ctrl, "ctrl")]:
@@ -63,7 +60,6 @@ class TopBar(QFrame):
         self._update_nav()
         main.addSpacing(12)
 
-        # ── ROS durum pill ────────────────────────────────────────────────
         self.pill = QLabel("● CONNECTING")
         self.pill.setStyleSheet(
             f"background:rgba(255,61,90,0.07);border:1px solid rgba(255,61,90,0.22);"
@@ -72,7 +68,6 @@ class TopBar(QFrame):
         )
         main.addWidget(self.pill)
 
-        # ── Saat ──────────────────────────────────────────────────────────
         self.clock = QLabel("--:--:--")
         self.clock.setStyleSheet(
             f"font-family:'Share Tech Mono';font-size:12px;color:{C['t2']};"
@@ -80,19 +75,59 @@ class TopBar(QFrame):
         )
         main.addWidget(self.clock)
 
-        # ── RUN_SIM ────────────────────────────────────────────────────────
-        es = QPushButton("RUN SIM")
-        es.setStyleSheet(
-            f"QPushButton{{background:rgba(255,61,90,0.1);border:2px solid {C['red']};"
-            f"border-radius:4px;color:{C['red']};font-family:'Rajdhani';font-size:12px;"
-            f"font-weight:700;letter-spacing:.15em;padding:6px 15px;}}"
-            f"QPushButton:hover{{background:rgba(255,61,90,0.22);}}"
-            f"QPushButton:pressed{{background:{C['red']};color:#fff;}}"
-        )
-        es.clicked.connect(self.run_sim_pressed)
-        main.addWidget(es)
+        self.btn_sim = QPushButton("▶ LAUNCH SIM")
+        self.btn_sim.clicked.connect(self.sim_toggle_pressed)
+        main.addWidget(self.btn_sim)
+        self.set_sim_state("IDLE")
 
-    # ── Nav buton stili ────────────────────────────────────────────────────────
+    def set_sim_state(self, state: str):
+        base = (
+            f"border-radius:4px;font-family:'Rajdhani';font-size:12px;"
+            f"font-weight:700;letter-spacing:.15em;padding:6px 15px;"
+        )
+        disabled_overlay = (
+            f"QPushButton:disabled{{opacity:0.5;}}"
+        )
+
+        if state == "IDLE":
+            self.btn_sim.setEnabled(True)
+            self.btn_sim.setText("▶ LAUNCH SIM")
+            self.btn_sim.setStyleSheet(
+                f"QPushButton{{background:rgba(255,61,90,0.10);"
+                f"border:2px solid {C['red']};color:{C['red']};{base}}}"
+                f"QPushButton:hover{{background:rgba(255,61,90,0.22);}}"
+            )
+
+        elif state == "LOADING":
+            self.btn_sim.setEnabled(False)
+            self.btn_sim.setText("⌛ LOADING...")
+            self.btn_sim.setStyleSheet(
+                f"QPushButton{{background:rgba(255,165,0,0.10);"
+                f"border:2px solid orange;color:orange;{base}}}"
+                f"QPushButton:disabled{{background:rgba(255,165,0,0.05);"
+                f"border:2px solid rgba(255,165,0,0.35);color:rgba(255,165,0,0.45);}}"
+            )
+
+        elif state == "RUNNING":
+            self.btn_sim.setEnabled(True)
+            self.btn_sim.setText("⬛ STOP SIM")
+            self.btn_sim.setStyleSheet(
+                f"QPushButton{{background:rgba(0,230,118,0.10);"
+                f"border:2px solid {C['ok']};color:{C['ok']};{base}}}"
+                f"QPushButton:hover{{background:rgba(0,230,118,0.30);}}"
+            )
+
+        elif state == "STOPPING":
+            # Tıklanamaz, soluk turuncu — temizlik devam ediyor
+            self.btn_sim.setEnabled(False)
+            self.btn_sim.setText("⏹ STOPPING...")
+            self.btn_sim.setStyleSheet(
+                f"QPushButton{{background:rgba(255,100,0,0.10);"
+                f"border:2px solid rgba(255,100,0,0.60);color:rgba(255,100,0,0.60);{base}}}"
+                f"QPushButton:disabled{{background:rgba(255,100,0,0.05);"
+                f"border:2px solid rgba(255,100,0,0.30);color:rgba(255,100,0,0.35);}}"
+            )
+
     def _nav_style(self, active: bool = False) -> str:
         if active:
             return (
@@ -119,7 +154,6 @@ class TopBar(QFrame):
         self._update_nav()
         self.nav_changed.emit(pg)
 
-    # ── Public metodlar ───────────────────────────────────────────────────────
     def set_ros_status(self, online: bool):
         if online:
             self.pill.setText("● ROS 2 ONLINE")

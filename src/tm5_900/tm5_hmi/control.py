@@ -245,12 +245,33 @@ class CtrlPage(QWidget):
             s.valueChanged.connect(lambda v, lbl=sv, u=unit: lbl.setText(f"{v/10:.1f}{u}"))
 
             s.sliderPressed.connect(lambda: setattr(self, '_is_planning', True))#new added
+            s.sliderMoved.connect(self._on_tcp_slider_moved)
+            
             box.addLayout(hdr); box.addWidget(s)
             sl_ly.addLayout(box)
             self._tcp_sliders[name] = s #new added
         pnl.body.addWidget(sw)
         return pnl
 
+    # ── TCP Slider'ı hareket ettirildiğinde çağrılan fonksiyon: IK çözümü yapıp Ghost Robotu günceller
+    def _on_tcp_slider_moved(self, _):
+        """Kullanıcı TCP slider'ını kaydırdığında arka planda IK çözüp Ghost Robotu günceller."""
+        if not hasattr(self, '_tcp_sliders') or len(self._tcp_sliders) < 6:
+            return
+
+        # mm -> Metre
+        x = (self._tcp_sliders["X"].value() / 10.0) / 1000.0
+        y = (self._tcp_sliders["Y"].value() / 10.0) / 1000.0
+        z = (self._tcp_sliders["Z"].value() / 10.0) / 1000.0
+
+        # Derece -> Radyan
+        rx = math.radians(self._tcp_sliders["RX"].value() / 10.0)
+        ry = math.radians(self._tcp_sliders["RY"].value() / 10.0)
+        rz = math.radians(self._tcp_sliders["RZ"].value() / 10.0)
+
+        # Worker'a gönder
+        self._ros.publish_cartesian_ghost(x, y, z, rx, ry, rz)
+    
     def _tab_style(self) -> str:
         """Sekmelerin koyu tema tasarımı."""
         return (

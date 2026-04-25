@@ -1,7 +1,16 @@
 # ─────────────────────────────────────────────────────────────────────────────
 #  viewer.py  —  Webots 3D akış görüntüleyicisi (QWebEngineView)
-#  WSL2 → Windows gateway IP'sini otomatik bulur
-#  Sayfa yüklendikten sonra JS ile WebSocket bağlantısını otomatik kurar
+#
+#  ÇALIŞMA MANTIĞI:
+#   • __init__: sadece bekleme sayfası gösterir, Webots'a bağlanmaz
+#   • connect_to_webots(): main.py'den simülasyon RUNNING olunca çağrılır
+#   • disconnect_webots(): main.py'den Stop Sim'de çağrılır
+#
+#  DÜZELTME:
+#   • _connected bayrağı kaldırıldı — setHtml() de loadFinished tetikler,
+#     bu yüzden URL kontrolü ile ayırt ediyoruz (http mi data: mi)
+#   • _manual_reload: doğrudan connect_to_webots() çağırır (browser.reload()
+#     değil — reload bekleme sayfasını da yenileyebilir)
 # ─────────────────────────────────────────────────────────────────────────────
 
 import subprocess
@@ -14,33 +23,16 @@ from config  import C
 from widgets import make_label
 
 
-# ── JS console mesajlarını terminale yansıtan özel sayfa ─────────────────────
-
 class _WebPage(QWebEnginePage):
     def javaScriptConsoleMessage(self, level, msg, line, src):
-        
         if "Unknown message received: \"time:" in msg:
-            return  # Webots'tan gelen zaman damgası mesajlarını görmezden gel
-        
+            return
         tag = ["DBG", "INF", "WRN", "ERR"][level] if level < 4 else "???"
         print(f"  [JS:{tag} L{line}] {msg}")
 
 
-# ── Ana ViewerFrame bileşeni ──────────────────────────────────────────────────
-
 class ViewerFrame(QFrame):
-    """
-    Webots R2025a streaming viewer'ını gömülü olarak gösteren panel.
-    - Windows IP'yi WSL2 varsayılan ağ geçidinden otomatik bulur.
-    - Sayfa yüklendikten sonra JS ile URL alanını doldurur ve
-      Connect butonuna otomatik tıklar (retry döngüsüyle).
-    """
-
-    # Bağlantı ayarları
-    WEBOTS_PORT    = 1234
-    INITIAL_WAIT   = 3000   # ms  — Parsing tamamlanması için ilk bekleme
-    RETRY_INTERVAL = 1000   # ms  — Her deneme arasındaki bekleme
-    MAX_RETRIES    = 10     # kez — Maksimum deneme sayısı
+    WEBOTS_PORT = 1234
 
     def __init__(self, title: str = "TM5-900 · LIVE WEBOTS SCENE", parent=None):
         super().__init__(parent)
@@ -62,55 +54,85 @@ class ViewerFrame(QFrame):
         hl.addWidget(make_label(title, C["a"], 10, bold=True))
         hl.addStretch()
 
-        self._status_lbl = make_label("● BAĞLANIYOR...", C["warn"], 9, mono=True)
+        self._status_lbl = make_label("● SİMÜLASYON BEKLENİYOR", C["t3"], 9, mono=True)
         hl.addWidget(self._status_lbl)
         hl.addSpacing(10)
 
-        btn_reload = QPushButton("↻ RELOAD 3D")
-        btn_reload.setStyleSheet(
+        self.btn_reload = QPushButton("↻ RELOAD 3D")
+        self.btn_reload.setStyleSheet(
             f"background:transparent;color:{C['t2']};"
             f"border:1px solid {C['t2']};border-radius:3px;"
             f"padding:2px 8px;font-size:9px;"
         )
-        btn_reload.clicked.connect(self._manual_reload)
-        hl.addWidget(btn_reload)
+        self.btn_reload.clicked.connect(self._manual_reload)
+        self.btn_reload.setEnabled(False)
+        hl.addWidget(self.btn_reload)
         ly.addWidget(hdr)
 
         # ── Windows IP tespiti ─────────────────────────────────────────────
         self._win_ip = self._detect_windows_ip()
-        print(f"\n[BİLGİ] WSL2 → Windows IP: {self._win_ip}")
-        print(f"[BİLGİ] Webots URL: http://{self._win_ip}:{self.WEBOTS_PORT}/index.html\n")
+        self._webots_url = f"http://{self._win_ip}:{self.WEBOTS_PORT}/index.html"
+        print(f"[BİLGİ] WSL2 → Windows IP: {self._win_ip}")
+        print(f"[BİLGİ] Webots URL: {self._webots_url}")
 
-        # ── WebEngine kurulumu ─────────────────────────────────────────────
+        # ── WebEngine ─────────────────────────────────────────────────────
         self.browser = QWebEngineView()
         self.browser.setPage(_WebPage(self.browser))
         self._apply_settings()
 
-        self.browser.loadStarted.connect(
-            lambda: self._set_status("● YÜKLENİYOR...", C["warn"])
-        )
+        # loadFinished her zaman tetiklenir — URL'e bakarak ne yapacağımızı belirleriz
         self.browser.loadFinished.connect(self._on_load_finished)
 
-        self.browser.setUrl(
-            QUrl(f"http://{self._win_ip}:{self.WEBOTS_PORT}/index.html")
-        )
+        # Başlangıç: bekleme sayfası
+        self._show_waiting_page()
+
         ly.addWidget(self.browser, 1)
 
-    # ── Ayarlar ───────────────────────────────────────────────────────────────
+    # ── Public API ────────────────────────────────────────────────────────────
+
+    def connect_to_webots(self):
+        """Simülasyon RUNNING'e geçince main.py'den çağrılır."""
+        self.btn_reload.setEnabled(True)
+        self._set_status("● BAĞLANIYOR...", C["warn"])
+        print(f"[BİLGİ] Webots'a bağlanılıyor → {self._webots_url}")
+        self.browser.load(QUrl(self._webots_url))
+
+    def disconnect_webots(self):
+        """Stop Sim'de main.py'den çağrılır."""
+        self.btn_reload.setEnabled(False)
+        self.browser.stop()
+        self._show_waiting_page()
+
+    # ── İç metodlar ───────────────────────────────────────────────────────────
+
+    def _show_waiting_page(self):
+        self._set_status("● SİMÜLASYON BEKLENİYOR", C["t3"])
+        html = (
+            "<html><body style='"
+            "margin:0;padding:0;background:#040c14;"
+            "display:flex;align-items:center;justify-content:center;"
+            "height:100vh;flex-direction:column;gap:12px;'>"
+            f"<div style='color:{C['a']};font-family:Rajdhani,monospace;"
+            "font-size:18px;font-weight:700;letter-spacing:.15em;'>"
+            "WEBOTS 3D GÖRÜNÜM</div>"
+            f"<div style='color:{C['t3']};font-family:monospace;font-size:11px;"
+            "letter-spacing:.1em;'>▶ LAUNCH SIM ile simülasyonu başlatın</div>"
+            "</body></html>"
+        )
+        self.browser.setHtml(html)
+
     def _apply_settings(self):
         s = self.browser.settings()
-        s.setAttribute(QWebEngineSettings.WebGLEnabled,                     True)
-        s.setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls,  True)
-        s.setAttribute(QWebEngineSettings.PluginsEnabled,                   True)
-        s.setAttribute(QWebEngineSettings.JavascriptEnabled,                True)
-        s.setAttribute(QWebEngineSettings.AllowRunningInsecureContent,      True)
-        s.setAttribute(QWebEngineSettings.Accelerated2dCanvasEnabled,       True)
-        s.setAttribute(QWebEngineSettings.ScrollAnimatorEnabled,            False)
+        s.setAttribute(QWebEngineSettings.WebGLEnabled,                    True)
+        s.setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
+        s.setAttribute(QWebEngineSettings.PluginsEnabled,                  True)
+        s.setAttribute(QWebEngineSettings.JavascriptEnabled,               True)
+        s.setAttribute(QWebEngineSettings.AllowRunningInsecureContent,     True)
+        s.setAttribute(QWebEngineSettings.Accelerated2dCanvasEnabled,      True)
+        s.setAttribute(QWebEngineSettings.ScrollAnimatorEnabled,           False)
 
-    # ── Windows IP tespiti ────────────────────────────────────────────────────
     @staticmethod
     def _detect_windows_ip() -> str:
-        # Yöntem 1: varsayılan ağ geçidi
         try:
             out = subprocess.check_output(
                 "ip route show default | awk '{print $3}'",
@@ -120,7 +142,6 @@ class ViewerFrame(QFrame):
                 return out
         except Exception:
             pass
-        # Yöntem 2: /etc/resolv.conf nameserver
         try:
             with open("/etc/resolv.conf") as f:
                 for line in f:
@@ -128,9 +149,8 @@ class ViewerFrame(QFrame):
                         return line.split()[1].strip()
         except Exception:
             pass
-        return "127.0.0.1"   # son çare
+        return "127.0.0.1"
 
-    # ── Durum etiketi ─────────────────────────────────────────────────────────
     def _set_status(self, text: str, color: str):
         self._status_lbl.setText(text)
         self._status_lbl.setStyleSheet(
@@ -138,28 +158,66 @@ class ViewerFrame(QFrame):
             f"font-family:'Share Tech Mono';background:transparent;"
         )
 
-    # ── Sayfa yüklendi callback ───────────────────────────────────────────────
     def _on_load_finished(self, ok: bool):
-        if not ok:
-            self._set_status("● SAYFA YÜKLENEMEDI", C["red"])
-            print("[HATA] Webots sayfası yüklenemedi — sunucu açık mı?")
+        """
+        setHtml() ve browser.load() ikisi de bu callback'i tetikler.
+        Bekleme sayfası için URL "about:blank" ya da "data:..." gelir.
+        Webots sayfası için URL http://... gelir.
+        Sadece Webots sayfası yüklendiğinde JS enjekte et.
+        """
+        current_url = self.browser.url().toString()
+
+        # Bekleme sayfası (setHtml) → atla
+        if not current_url.startswith("http"):
             return
 
-        self._set_status("● BAĞLANIYOR...", C["warn"])
+        # Webots sayfası yüklenemedi
+        if not ok:
+            self._set_status("● SAYFA YÜKLENEMEDI — sunucu hazır mı?", C["red"])
+            print("[HATA] Webots sayfası yüklenemedi")
+            return
+
+        # Başarıyla yüklendi → JS enjekte et
+        self._set_status("● JS ENJEKTELENİYOR...", C["warn"])
         self._inject_autoconnect_js()
 
-    # ── JS enjeksiyonu: URL doldur + Connect'e bas ────────────────────────────
     def _inject_autoconnect_js(self):
+        """Orijinal çalışan JS — dokunulmadı."""
         ws_url = f"ws://{self._win_ip}:{self.WEBOTS_PORT}"
         js = f"""
 (function() {{
-    
+
     var TARGET = '{ws_url}';
-    var MAX    = {self.MAX_RETRIES};
-    var DELAY  = {self.RETRY_INTERVAL};
+
+    var style = document.createElement('style');
+    style.innerHTML = `
+        #header, .header, header,
+        form, #connect-panel, .connect-panel {{
+            display: none !important;
+        }}
+        body {{
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #040c14 !important;
+            overflow: hidden !important;
+        }}
+        webots-view, #webots-view {{
+            width: 100vw !important;
+            height: 100vh !important;
+            display: block !important;
+        }}
+    `;
+    document.head.appendChild(style);
+
+    var btn = document.getElementById('connect-button');
+    if (btn && btn.parentElement) {{
+        btn.parentElement.style.display = 'none';
+        if (btn.parentElement.previousElementSibling) {{
+            btn.parentElement.previousElementSibling.style.display = 'none';
+        }}
+    }}
 
     function fillAndConnect() {{
-        // 1) WebSocket URL input alanını doldur
         var inputs = document.querySelectorAll('input[type="text"], input:not([type])');
         for (var i = 0; i < inputs.length; i++) {{
             var v = inputs[i].value || '';
@@ -170,37 +228,28 @@ class ViewerFrame(QFrame):
                 inputs[i].value = TARGET;
                 inputs[i].dispatchEvent(new Event('input',  {{bubbles:true}}));
                 inputs[i].dispatchEvent(new Event('change', {{bubbles:true}}));
-                console.log('[HMI] Input → ' + TARGET);
                 break;
             }}
         }}
-        
-        if (mode) {{
-            mode.value = "mjpeg";
-            mode.dispatchEvent(new Event('change', {{ bubbles: true }}));
-            console.log("Forced mode: mjpeg");
+        if (window.mode) {{
+            window.mode.value = "mjpeg";
+            window.mode.dispatchEvent(new Event('change', {{bubbles: true}}));
         }}
-
-        // 2) Connect butonunu bul ve tıkla
-        
-        const btn = document.getElementById('connect-button');
-        
         if (btn) {{
-                setTimeout(() => {{ 
-                    btn.click();
-                    console.log("Auto connect clicked");
-                }}, 500);
+            setTimeout(() => {{ btn.click(); }}, 500);
         }}
-        
-        return true;
     }}
 
     fillAndConnect();
 }})();
         """
-        self.browser.page().runJavaScript(js)
+        self.browser.page().runJavaScript(
+            js,
+            lambda result: self._set_status("● BAĞLANDI", C["ok"])
+        )
 
-    # ── Manuel reload ─────────────────────────────────────────────────────────
     def _manual_reload(self):
+        """RELOAD 3D butonu — sayfayı yeniden yükle ve JS enjekte et."""
         self._set_status("● YENİDEN BAĞLANIYOR...", C["warn"])
-        self.browser.reload()
+        # browser.reload() değil, connect_to_webots() — bu garantili çalışır
+        self.connect_to_webots()

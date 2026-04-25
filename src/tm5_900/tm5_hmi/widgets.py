@@ -254,7 +254,7 @@ class LogWidget(QTextEdit):
         )
         self._count = 0
 
-    def add(self, msg: str, kind: str = "info") -> int:
+    def add(self, msg: str, kind: str = "info") -> int: 
         col = {
             "ok":   C["ok"],
             "warn": C["warn"],

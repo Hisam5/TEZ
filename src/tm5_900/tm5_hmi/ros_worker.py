@@ -37,6 +37,10 @@ try:
     from moveit_msgs.msg import DisplayRobotState, RobotState
     from sensor_msgs.msg import JointState
     
+    from moveit_msgs.srv import GetPositionIK
+    from moveit_msgs.msg import PositionIKRequest
+
+    
     ROS_AVAILABLE = True
 except ImportError:
     ROS_AVAILABLE = False
@@ -96,6 +100,7 @@ class RosWorker(QThread):
                 DisplayRobotState, '/display_robot_state', 10) # MoveIt için hayalet robot yayıncısı
             
             self.move_action_client = ActionClient(self._node, MoveGroup, 'move_action')
+            self._ik_client = self._node.create_client(GetPositionIK, '/compute_ik')
             self._node.create_subscription(
                 JointState, "/joint_states", self._js_cb, 10)
 
@@ -294,6 +299,47 @@ class RosWorker(QThread):
         
         with self._lock:
             self._pub_ghost.publish(msg)
+    def publish_cartesian_ghost(self, x: float, y: float, z: float, roll: float, pitch: float, yaw: float):
+        """Kartezyen hedef için IK hesaplar ve sonucu Hayalet Robot olarak RViz'e gönderir."""
+        if not hasattr(self, '_ik_client') or not self._ik_client.wait_for_service(timeout_sec=0.05):
+            return
+        
+        req = GetPositionIK.Request()
+        ik_req = PositionIKRequest()
+        ik_req.group_name = "tm5_arm"
+        ik_req.pose_stamped.header.frame_id = self._base_frame
+        
+        # Pozisyon (Metre)
+        ik_req.pose_stamped.pose.position.x = x
+        ik_req.pose_stamped.pose.position.y = y
+        ik_req.pose_stamped.pose.position.z = z
+        
+        # Yönelim (Quaternion)
+        q = quaternion_from_euler(roll, pitch, yaw)
+        ik_req.pose_stamped.pose.orientation.x = q[0]
+        ik_req.pose_stamped.pose.orientation.y = q[1]
+        ik_req.pose_stamped.pose.orientation.z = q[2]
+        ik_req.pose_stamped.pose.orientation.w = q[3]
+        
+        req.ik_request = ik_req
+        
+        # UI donmasın diye arka planda (asenkron) çözümü iste
+        future = self._ik_client.call_async(req)
+        future.add_done_callback(self._ik_callback)
+        
+    def _ik_callback(self, future):
+        """IK çözümü geldiğinde çalışır ve Hayalet Robotu çizer."""
+        try:
+            response = future.result()
+            # 1 = SUCCESS (MoveIt başarı kodu)
+            if response.error_code.val == 1:
+                msg = DisplayRobotState()
+                msg.state = response.solution
+                with self._lock:
+                    if self._pub_ghost:
+                        self._pub_ghost.publish(msg)
+        except Exception:
+            pass
 
     # ── Temiz kapatma ─────────────────────────────────────────────────────────
     def stop(self):
