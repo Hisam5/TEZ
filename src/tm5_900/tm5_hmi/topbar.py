@@ -75,7 +75,7 @@ class TopBar(QFrame):
         )
         main.addWidget(self.clock)
 
-        self.btn_sim = QPushButton("▶ LAUNCH SIM")
+        self.btn_sim = QPushButton("LAUNCH SIM")
         self.btn_sim.clicked.connect(self.sim_toggle_pressed)
         main.addWidget(self.btn_sim)
         self.set_sim_state("IDLE")
@@ -91,7 +91,7 @@ class TopBar(QFrame):
 
         if state == "IDLE":
             self.btn_sim.setEnabled(True)
-            self.btn_sim.setText("▶ LAUNCH SIM")
+            self.btn_sim.setText("LAUNCH SIM")
             self.btn_sim.setStyleSheet(
                 f"QPushButton{{background:rgba(255,61,90,0.10);"
                 f"border:2px solid {C['red']};color:{C['red']};{base}}}"
@@ -100,7 +100,7 @@ class TopBar(QFrame):
 
         elif state == "LOADING":
             self.btn_sim.setEnabled(False)
-            self.btn_sim.setText("⌛ LOADING...")
+            self.btn_sim.setText("LOADING...")
             self.btn_sim.setStyleSheet(
                 f"QPushButton{{background:rgba(255,165,0,0.10);"
                 f"border:2px solid orange;color:orange;{base}}}"
@@ -110,7 +110,7 @@ class TopBar(QFrame):
 
         elif state == "RUNNING":
             self.btn_sim.setEnabled(True)
-            self.btn_sim.setText("⬛ STOP SIM")
+            self.btn_sim.setText("STOP SIM")
             self.btn_sim.setStyleSheet(
                 f"QPushButton{{background:rgba(0,230,118,0.10);"
                 f"border:2px solid {C['ok']};color:{C['ok']};{base}}}"
@@ -120,7 +120,7 @@ class TopBar(QFrame):
         elif state == "STOPPING":
             # Tıklanamaz, soluk turuncu — temizlik devam ediyor
             self.btn_sim.setEnabled(False)
-            self.btn_sim.setText("⏹ STOPPING...")
+            self.btn_sim.setText("STOPPING...")
             self.btn_sim.setStyleSheet(
                 f"QPushButton{{background:rgba(255,100,0,0.10);"
                 f"border:2px solid rgba(255,100,0,0.60);color:rgba(255,100,0,0.60);{base}}}"

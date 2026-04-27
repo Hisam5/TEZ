@@ -71,6 +71,8 @@ class HMI(QMainWindow):
         self._ros.joint_state_received.connect(self._on_joint_state)
         self._ros.log_message.connect(self._on_ros_log)
         self._ros.tcp_pose_received.connect(self._on_tcp_pose)
+        self._ros.ghost_tcp_received.connect(self._on_ghost_tcp)
+        self._ros.ghost_joints_received.connect(self._on_ghost_joints)
         self._ros.start()
 
         central = QWidget(); self.setCentralWidget(central)
@@ -106,21 +108,20 @@ class HMI(QMainWindow):
         root.addWidget(self._stack, 1)
 
         self._dash = DashPage(self._ros, self._joints)
-        self._ctrl = CtrlPage(self._ros, self._joints)
+        self._ctrl = CtrlPage(self._ros, self._joints, self._tb)
         self._stack.addWidget(_padded(self._dash))
         self._stack.addWidget(_padded(self._ctrl))
         self._pages = {"dash": 0, "ctrl": 1}
 
         # ── Viewer referansı — dashboard.py'deki gerçek isim: _viewer_frame ──
         self._viewer = getattr(self._dash, "_viewer_frame", None)
-        if self._viewer is None:
-            print("[UYARI] dashboard._viewer_frame bulunamadı — viewer bağlantısı devre dışı")
-
-        self._clk_tmr = QTimer(self); self._clk_tmr.timeout.connect(self._tb.tick)
+        self._clk_tmr = QTimer(self)
+        self._clk_tmr.timeout.connect(self._tb.tick)
         self._clk_tmr.start(1000)
 
         self._up = 0
-        self._up_tmr = QTimer(self); self._up_tmr.timeout.connect(self._tick_up)
+        self._up_tmr = QTimer(self)
+        self._up_tmr.timeout.connect(self._tick_up)
         self._up_tmr.start(1000)
 
         self._demo_t = 0.0; self._demo_on = True
@@ -141,6 +142,13 @@ class HMI(QMainWindow):
     def _on_tcp_pose(self, x, y, z, rx, ry, rz):
         self._dash.update_tcp(x, y, z, rx, ry, rz)
         self._ctrl.update_tcp_from_ros(x, y, z, rx, ry, rz)
+    @pyqtSlot(list)
+    def _on_ghost_joints(self, angles_rad):
+        self._ctrl.update_ghost_joints(angles_rad)
+
+    @pyqtSlot(float, float, float, float, float, float)
+    def _on_ghost_tcp(self, x, y, z, rx, ry, rz):
+        self._ctrl.update_ghost_tcp(x, y, z, rx, ry, rz)
 
     # ── Sim toggle ────────────────────────────────────────────────────────────
     def _toggle_sim(self):
@@ -314,12 +322,12 @@ class HMI(QMainWindow):
         self._demo_on = not online
 
     @pyqtSlot(list, list, list)
-    def _on_joint_state(self, pos, vel, eff):
+    def _on_joint_state(self, pos: list, vel: list, eff: list):
         self._dash.update_from_ros(pos, vel, eff)
         self._ctrl.update_canvas_from_ros(pos)
 
     @pyqtSlot(str, str)
-    def _on_ros_log(self, msg, kind):
+    def _on_ros_log(self, msg: str, kind: str):
         self._dash.log(msg, kind)
 
     # ── Timer'lar ─────────────────────────────────────────────────────────────
@@ -342,9 +350,13 @@ class HMI(QMainWindow):
         super().closeEvent(e)
 
 
-def _padded(w):
+# ─────────────────────────────────────────────────────────────────────────────
+#  Yardımcı: widget'ı içine alan saydam kaplama
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _padded(w: QWidget) -> QWidget:
     c = QWidget(); c.setStyleSheet("background:transparent;")
-    ly = QVBoxLayout(c); ly.setContentsMargins(0,0,0,0); ly.setSpacing(0)
+    ly = QVBoxLayout(c); ly.setContentsMargins(0, 0, 0, 0); ly.setSpacing(0)
     ly.addWidget(w)
     return c
 

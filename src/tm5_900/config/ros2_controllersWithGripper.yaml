@@ -3,12 +3,12 @@ controller_manager:
     update_rate: 100
     arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
+    
     gripper_controller:
-      type: position_controllers/GripperActionController
+      type: joint_trajectory_controller/JointTrajectoryController
+      
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
-    righthand_joint_controller:
-      type: forward_command_controller/ForwardCommandController
 
 arm_controller:
   ros__parameters:
@@ -24,21 +24,16 @@ arm_controller:
     state_interfaces:
       - position
       - velocity
-
     allow_partial_joints_goal: true
 
 gripper_controller:
   ros__parameters:
-    joint: lefthand_joint
-    action_monitor_rate: 20.0
-    goal_tolerance: 0.05
-    max_effort: 50.0
-    allow_stalling: true
-    stall_velocity_threshold: 0.001
-    stall_timeout: 1.0
-
-righthand_joint_controller:
-  ros__parameters:
     joints:
+      - lefthand_joint
       - righthand_joint
-    interface_name: position
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    allow_partial_joints_goal: true

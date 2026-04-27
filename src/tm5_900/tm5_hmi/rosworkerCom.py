@@ -10,11 +10,8 @@ from tf_transformations import euler_from_quaternion
 #===============================================================
 import math
 import threading
-
 from PyQt5.QtCore import QThread, pyqtSignal
-
 from config import TM5_JOINTS
-
 # ── ROS 2 opsiyonel import (kurulu değilse demo mod) ─────────────────────────
 try:
     import rclpy
@@ -39,12 +36,10 @@ try:
     
     from moveit_msgs.srv import GetPositionIK, GetPositionFK
     from moveit_msgs.msg import PositionIKRequest
-
     
     ROS_AVAILABLE = True
 except ImportError:
     ROS_AVAILABLE = False
-
 
 class RosWorker(QThread):
 #===============================================================
@@ -58,9 +53,7 @@ class RosWorker(QThread):
     joint_state_received = pyqtSignal(list, list, list)   # pos, vel, eff
     connection_changed   = pyqtSignal(bool)
     log_message          = pyqtSignal(str, str)            # message, kind
-
     JOINT_NAMES = [j["ros"] for j in TM5_JOINTS]
-
     def __init__(self):
         super().__init__()
         self._node   = None
@@ -111,13 +104,11 @@ class RosWorker(QThread):
             
             self.move_action_client = ActionClient(self._node, MoveGroup, 'move_action')
             self._ik_client = self._node.create_client(GetPositionIK, '/compute_ik')
-            self._fk_client = self._node.create_client(GetPositionFK, '/compute_fk') 
+            self._fk_client = self._node.create_client(GetPositionFK, '/compute_fk') # YENİ
             self._node.create_subscription(
                 JointState, "/joint_states", self._js_cb, 10)
-
             self.connection_changed.emit(True)
             self.log_message.emit("ROS 2 bağlandı — tm5_hmi node aktif", "ok")
-
             while self._active and rclpy.ok():
                 rclpy.spin_once(self._node, timeout_sec=0.05)
  #===============================================================
@@ -128,28 +119,22 @@ class RosWorker(QThread):
                     self._tool_frame,
                     rclpy.time.Time()
       )
-
                     t = tf.transform.translation
                     q = tf.transform.rotation
-
                     roll, pitch, yaw = euler_from_quaternion([q.x, q.y, q.z, q.w])
-
                     x = t.x * 1000.0
                     y = t.y * 1000.0
                     z = t.z * 1000.0
                     rx = math.degrees(roll)
                     ry = math.degrees(pitch)
                     rz = math.degrees(yaw)
-
                     self.tcp_pose_received.emit(x, y, z, rx, ry, rz)
-
                 except Exception:
                     pass
  #===============================================================
         except Exception as exc:
             self.connection_changed.emit(False)
             self.log_message.emit(f"ROS 2 hatası: {exc}", "err")
-
     # ── /joint_states callback ────────────────────────────────────────────────
     def _js_cb(self, msg):
         idx = {n: i for i, n in enumerate(msg.name)}
@@ -160,7 +145,6 @@ class RosWorker(QThread):
             vel.append(msg.velocity[i] if i is not None and msg.velocity else 0.0)
             eff.append(msg.effort[i]   if i is not None and msg.effort   else 0.0)
         self.joint_state_received.emit(pos, vel, eff)
-
     # ── Publish yardımcıları ──────────────────────────────────────────────────
     def set_limits(self, joint_speed_pct: float, tcp_speed_mm: float , collision_pct: float):
         """Arayüzden gelen limit değerlerini günceller."""
@@ -176,12 +160,10 @@ class RosWorker(QThread):
         if not self.move_action_client:
             self.log_message.emit("MoveIt Action Client tanımlı değil!", "err")
             return
-
         # MoveIt sunucusunun açık olup olmadığını kontrol et
         if not self.move_action_client.wait_for_server(timeout_sec=1.0):
             self.log_message.emit("MoveIt 'move_action' sunucusu bulunamadı!", "err")
             return
-
         # --- EKLENEN KISIM BAŞLANGICI: MoveIt Yörünge Hedefi Gönderme Metodu ---
         #Jointlarin hiz limitleri scale yapilmis olarak gonderilir, bu sayede arayuzden gelen komutlar guvenli hale gelir
         goal_msg = MoveGroup.Goal()
@@ -204,9 +186,7 @@ class RosWorker(QThread):
             jc.tolerance_below = 0.005
             jc.weight = 1.0
             constraints.joint_constraints.append(jc)
-
         goal_msg.request.goal_constraints.append(constraints)
-
         self.log_message.emit(f"MoveIt hedefe gidiyor...", "ok")
         # Planı asenkron (arayüzü dondurmadan) gönder
         self.move_action_client.send_goal_async(goal_msg)
@@ -275,7 +255,6 @@ class RosWorker(QThread):
         goal_msg.request.goal_constraints.append(constraints)
         self.log_message.emit(f"MoveIt Kartezyen hedefe (IK) gidiyor...", "ok")
         self.move_action_client.send_goal_async(goal_msg)
-
     
     def publish_joints(self, angles_deg: list):
         """Derece cinsinden 6 eklem açısını JointTrajectory olarak yayınla."""
@@ -292,7 +271,6 @@ class RosWorker(QThread):
         msg.points      = [pt]
         with self._lock:
             self._pub_j.publish(msg)
-
     def publish_twist(self, lx: float, ly: float, lz: float, az: float):
         """Kartezyen hız komutunu /cmd_vel'e gönder."""
         if not self._pub_t:
@@ -304,7 +282,6 @@ class RosWorker(QThread):
         msg.angular.z = az
         with self._lock:
             self._pub_t.publish(msg)
-
     def publish_cmd(self, cmd: str): # 
         """String komutunu /robot_command'a gönder."""
         if not self._pub_c:
@@ -323,7 +300,6 @@ class RosWorker(QThread):
         js = JointState()
         js.name = self.JOINT_NAMES
         js.position = angles_rad
-        
         msg.state.joint_state = js
         
         with self._lock:
@@ -393,7 +369,6 @@ class RosWorker(QThread):
         """IK çözümü geldiğinde çalışır, Hayalet Robotu çizer ve Joint slider'larını günceller."""
         try:
             response = future.result()
-            # 1 = SUCCESS (MoveIt başarı kodu)
             if response.error_code.val == 1:
                 msg = DisplayRobotState()
                 msg.state = response.solution
@@ -406,7 +381,6 @@ class RosWorker(QThread):
                 self.ghost_joints_received.emit(joint_positions)
         except Exception:
             pass
-
     # ── Temiz kapatma ─────────────────────────────────────────────────────────
     def stop(self):
         self._active = False

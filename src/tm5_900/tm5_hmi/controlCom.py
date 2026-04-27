@@ -3,7 +3,6 @@
 #  Sol: Operasyon modu + Manuel eklem slider'ları
 #  Sağ: Hızlı komutlar + Hız/Tork limitleri + Hazır görevler
 # ─────────────────────────────────────────────────────────────────────────────
-
 import math
 import subprocess
 import json  # <--- YENİ
@@ -15,26 +14,15 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QWindow
 from PyQt5.QtCore import Qt, QTimer
-
 from config     import C
 from widgets    import Panel, CmdButton, make_label, slider_style
 from ros_worker import RosWorker
-from topbar import TopBar
-
 
 class CtrlPage(QWidget):
-    """
-    Kontrol sayfası.
-    - Sol: Mod seçimi + 6-DOF slider kontrolü
-    - Sağ: Hızlı komut butonları, güvenlik limitleri, hazır görevler
-    """
-
-    def __init__(self, ros: RosWorker, joints: list, topbar, parent=None):
+    def __init__(self, ros: RosWorker, joints: list, parent=None):
         super().__init__(parent)
         self._ros    = ros
         self._joints = joints
-        self._topbar = topbar
-        # Joystick durumu (şu an kullanılmıyor — ileride genişletilebilir)
         self._jx = self._jy = self._jz = self._jwz = 0.0
         self._joy_timer = QTimer(self)
         self._joy_timer.timeout.connect(self._pub_twist)
@@ -50,53 +38,46 @@ class CtrlPage(QWidget):
         self._run_timer = QTimer(self)
         self._run_timer.timeout.connect(self._tick_run_prog)
         self._build_ui()
-        self._gripper_state = "OPEN"  # varsayılan
-        self._target_joints = [0.0] * 6 
 
-    # ── Ana düzen ─────────────────────────────────────────────────────────────
-    def _build_ui(self): 
+    def _build_ui(self):
         ml = QHBoxLayout(self)
         ml.setContentsMargins(15, 15, 15, 15) 
         ml.setSpacing(15)
-
         ml.addLayout(self._make_left_col(), 1)
         ml.addLayout(self._make_right_col(), 1)
 
-    # ── Sol sütun: Mod + Slider'lar ───────────────────────────────────────────
     def _make_left_col(self):
         col = QVBoxLayout(); col.setSpacing(15)
         col.addWidget(self._make_cmd_panel())
-        col.addWidget(self._make_rviz_panel(),1)
-        
+        col.addWidget(self._make_rviz_panel(), 1)
         return col
 
     def _make_mode_panel(self):
         pnl = Panel("TEACH MODE")
-        mg = QGridLayout(); mg.setSpacing(6)
-
-        # --- 1. Satır: Activate/Inactive, Point, Delete p. ---
         
-        # Activate Butonu
+        # Üst Kısım: Aksiyon Butonları (2x2 Grid)
+        mg = QGridLayout(); mg.setSpacing(6)
+        
         self._btn_activate = QPushButton("INACTIVE")
-        self._btn_activate.setCheckable(True) # Basılı kalabilme özelliği
+        self._btn_activate.setCheckable(True) 
         self._btn_activate.setStyleSheet(self._mode_style())
         self._btn_activate.setMinimumHeight(35)
         self._btn_activate.toggled.connect(self._on_activate_toggled)
         mg.addWidget(self._btn_activate, 0, 0) 
         
-        btn_point = QPushButton("RECORD POINT")
+        btn_point = QPushButton("📍 RECORD POINT")
         btn_point.setStyleSheet(self._mode_style())
         btn_point.setMinimumHeight(35)
         btn_point.clicked.connect(self._record_point)
         mg.addWidget(btn_point, 0, 1) 
 
-        btn_save = QPushButton("SAVE PROG")
+        btn_save = QPushButton("💾 SAVE PROG")
         btn_save.setStyleSheet(self._mode_style())
         btn_save.setMinimumHeight(35)
         btn_save.clicked.connect(self._save_active_prog)
         mg.addWidget(btn_save, 1, 0)
         
-        btn_delete = QPushButton("DELETE PROG")
+        btn_delete = QPushButton("🗑 DELETE PROG")
         btn_delete.setStyleSheet(self._mode_style())
         btn_delete.setMinimumHeight(35)
         btn_delete.clicked.connect(self._delete_active_prog)
@@ -108,14 +89,13 @@ class CtrlPage(QWidget):
         for i, prog_name in enumerate(["PROG1", "PROG2", "PROG3"]):
             b = QPushButton(prog_name)
             b.setCheckable(True)
-            b.setChecked(i == 0)  # Başlangıçta Prog1 seçili (highlighted) olsun
+            b.setChecked(i == 0)  
             b.setStyleSheet(self._mode_style())
             b.setMinimumHeight(35)
-            # Tıklandığında sadece seçilen butonu aktif yapacak fonksiyona bağla
             b.clicked.connect(lambda _, btn=b: self._set_prog(btn))
             self._prog_btns.append(b)
             prog_ly.addWidget(b)
-
+            
         pnl.body.addLayout(mg)
         pnl.body.addLayout(prog_ly)
         return pnl
@@ -139,7 +119,6 @@ class CtrlPage(QWidget):
 
     # ── TEACH MODE Aksiyonları ────────────────────────────────────────────────
     def _on_activate_toggled(self, checked):
-        """Activate butonu basılıysa metni Active, değilse Inactive yapar."""
         if checked:
             self._btn_activate.setText("ACTIVE")
             self._ros.log_message.emit("Teach Mode: ACTIVE. Ready to record.", "warn")
@@ -148,7 +127,6 @@ class CtrlPage(QWidget):
             self._ros.log_message.emit("Teach Mode: INACTIVE.", "info")
 
     def _set_prog(self, active_btn):
-        """Prog butonlarından sadece tıklananı aktif (highlighted) yapar."""
         for b in self._prog_btns:
             b.setChecked(b is active_btn)
         
@@ -263,11 +241,8 @@ class CtrlPage(QWidget):
         sw = QWidget(); sw.setStyleSheet("background:transparent;")
         sl_ly = QVBoxLayout(sw); sl_ly.setSpacing(15)
         self._sliders = []
-
         for i, j in enumerate(self._joints):
             box = QVBoxLayout(); box.setSpacing(5)
-
-            # Başlık satırı: eklem adı + anlık değer
             hdr = QHBoxLayout()
             hdr.addWidget(make_label(f"{j['id']} · {j['ros']}", C["t2"], 12, bold=True))
             hdr.addStretch()
@@ -306,39 +281,30 @@ class CtrlPage(QWidget):
             ))
             
             s.sliderPressed.connect(lambda: setattr(self, '_is_planning', True))
-           
             sb.editingFinished.connect(lambda: setattr(self, '_is_planning', True))
             
             lims = QHBoxLayout()
             lims.addWidget(make_label(f"{j['mn']}°", C["t3"], 9, mono=True))
             lims.addStretch()
             lims.addWidget(make_label(f"{j['mx']}°", C["t3"], 9, mono=True))
-
+            
             box.addLayout(hdr); box.addWidget(s); box.addLayout(lims)
             sl_ly.addLayout(box)
             self._sliders.append((s, sb)) 
         pnl.body.addWidget(sw)
         return pnl
     
-    
-
-    # ── Sağ sütun: Komutlar + Limitler + Görevler ─────────────────────────────
     def _make_right_col(self):
         col = QVBoxLayout(); col.setSpacing(15)
         col.addWidget(self._make_mode_panel())   
         
-        # Altta 3 Sekmeli Yapı (JOINTS, TCP, LIMITS)
         self.tabs = QTabWidget()
         self.tabs.setStyleSheet(self._tab_style())
-        
-        # Mevcut fonksiyonları sekme olarak ekliyoruz
         self.tabs.addTab(self._make_slider_panel(), "JOINTS")
         self.tabs.addTab(self._make_tcp_panel(), "TCP")
         self.tabs.addTab(self._make_limits_panel(), "LIMITS")
         
         col.addWidget(self.tabs, 1) 
-                
-        # EN ALTA: Gripper Kontrol Paneli Eklendi
         col.addWidget(self._make_gripper_panel())
         col.addStretch()
         return col
@@ -399,7 +365,7 @@ class CtrlPage(QWidget):
             lims2.addWidget(make_label(str(mn), C["t3"], 8, mono=True))
             lims2.addStretch()
             lims2.addWidget(make_label(str(mx), C["t3"], 8, mono=True))
-
+            
             pnl.body.addLayout(lh)
             pnl.body.addWidget(s)
             pnl.body.addLayout(lims2)
@@ -408,18 +374,15 @@ class CtrlPage(QWidget):
         return pnl
     
     def _make_tcp_panel(self):
-        """TCP (Kartezyen) Kontrol Sekmesi."""
         pnl = Panel("CARTESIAN CONTROL", "TCP · MM/DEG")
         sw = QWidget(); sw.setStyleSheet("background:transparent;")
         sl_ly = QVBoxLayout(sw); sl_ly.setSpacing(15)
         
-        self._tcp_sliders = {} #new added
-        # Eksenler ve Limitler
+        self._tcp_sliders = {} 
         tcp_axes = [
             ("X", -1000, 1000, 0, "mm"), ("Y", -1000, 1000, 0, "mm"), ("Z", -500, 1500, 0, "mm"),
             ("RX", -180, 180, 0, "°"), ("RY", -180, 180, 0, "°"), ("RZ", -180, 180, 0, "°")
         ]
-
         for name, mn, mx, val, unit in tcp_axes:
             box = QVBoxLayout(); box.setSpacing(5)
             hdr = QHBoxLayout()
@@ -452,7 +415,6 @@ class CtrlPage(QWidget):
             ))
             
             s.sliderPressed.connect(lambda: setattr(self, '_is_planning', True))
-            
             sb.editingFinished.connect(lambda: setattr(self, '_is_planning', True))
             
             box.addLayout(hdr); box.addWidget(s)
@@ -461,23 +423,18 @@ class CtrlPage(QWidget):
         pnl.body.addWidget(sw)
         return pnl
 
-    # ── TCP Slider'ı hareket ettirildiğinde çağrılan fonksiyon: IK çözümü yapıp Ghost Robotu günceller
     def _on_tcp_slider_moved(self):
-        """Kullanıcı TCP slider'ını kaydırdığında arka planda IK çözüp Ghost Robotu günceller."""
         if not hasattr(self, '_tcp_sliders') or len(self._tcp_sliders) < 6:
             return
-        self._is_planning = True
-        x  = (self._tcp_sliders["X"][0].value()  / 10.0) / 1000.0
-        y  = (self._tcp_sliders["Y"][0].value()  / 10.0) / 1000.0
-        z  = (self._tcp_sliders["Z"][0].value()  / 10.0) / 1000.0
+        x = (self._tcp_sliders["X"][0].value() / 10.0) / 1000.0
+        y = (self._tcp_sliders["Y"][0].value() / 10.0) / 1000.0
+        z = (self._tcp_sliders["Z"][0].value() / 10.0) / 1000.0
         rx = math.radians(self._tcp_sliders["RX"][0].value() / 10.0)
         ry = math.radians(self._tcp_sliders["RY"][0].value() / 10.0)
         rz = math.radians(self._tcp_sliders["RZ"][0].value() / 10.0)
-        # IK çöz — callback _ik_callback içinde _target_joints güncellenecek
         self._ros.publish_cartesian_ghost(x, y, z, rx, ry, rz)
-        
+    
     def _tab_style(self) -> str:
-        """Sekmelerin koyu tema tasarımı."""
         return (
             f"QTabWidget::pane {{ border: 1px solid {C['b']}; border-radius: 4px; top: -1px; }}"
             f"QTabBar::tab {{ background: {C['card2']}; border: 1px solid {C['b']}; "
@@ -497,9 +454,8 @@ class CtrlPage(QWidget):
         # OPEN ve CLOSE butonlarını oluşturuyoruz
         for txt in ["OPEN", "CLOSE"]:
             btn = QPushButton(txt)
-            # Daha önce yaptığımız beyaz yazılı ve tıklama efektli stil
             btn.setStyleSheet(self._mode_style())
-            btn.setMinimumHeight(45) # Biraz daha belirgin olması için yükseklik verdik
+            btn.setMinimumHeight(45) 
             
             # YENİ: Butona tıklandığında _send_gripper_cmd fonksiyonunu çağırır
             btn.clicked.connect(lambda _, t=txt: self._send_gripper_cmd(t))
@@ -508,67 +464,27 @@ class CtrlPage(QWidget):
             
         pnl.body.addLayout(ly)
         return pnl
-    
     def _send_gripper_cmd(self, action: str):
         """Gripper komutunu loglar ve doğrudan ROS motorlarına iletir."""
-        self._gripper_state = action
         color = "ok" if action == "OPEN" else "warn"
         self._ros.log_message.emit(f"GRIPPER: {action}", color)
         
-    
-    # def _make_tasks_panel(self):
-    #     pnl = Panel("PRESET TASKS", "WEBOTS")
-    #     for no, nm, st_ in [
-    #         ("01", "Home Position",      "rdy"),
-    #         ("02", "Pick & Place A→B",   "idle"),
-    #         ("05", "Custom Trajectory",  "idle"),
-    #     ]:
-    #         f = QFrame()
-    #         f.setStyleSheet(
-    #             f"QFrame{{background:rgba(0,0,0,0.25);"
-    #             f"border:1px solid {C['b']};border-radius:5px;}}"
-    #             f"QFrame:hover{{border-color:{C['bb']};}}"
-    #         )
-    #         f.setCursor(Qt.PointingHandCursor)
-    #         ly2 = QHBoxLayout(f); ly2.setContentsMargins(12, 10, 12, 10)
-    #         ly2.addWidget(make_label(no, C["t3"], 10, mono=True))
-    #         ly2.addWidget(make_label(nm, C["t1"], 12))
-    #         ly2.addStretch()
-
-    #         sc, bg = {
-    #             "rdy":  (C["a2"], "rgba(0,255,157,0.07)"),
-    #             "done": (C["a"],  "rgba(0,212,170,0.07)"),
-    #             "idle": (C["t3"], "rgba(255,255,255,0.02)"),
-    #         }.get(st_, (C["t3"], "transparent"))
-
-    #         sl2 = QLabel(st_.upper())
-    #         sl2.setStyleSheet(
-    #             f"color:{sc};background:{bg};border:1px solid {sc}40;"
-    #             f"border-radius:10px;font-size:9px;padding:3px 8px;"
-    #             f"font-family:'Share Tech Mono';"
-    #         )
-    #         ly2.addWidget(sl2)
-    #         pnl.body.addWidget(f)
-    #     return pnl
-
+        # Sadece text göndermek yerine doğrudan motoru tetikle!
+        self._ros.set_gripper(action)
     
     def _make_rviz_panel(self):
         pnl = Panel("3D GHOST PREVIEW", "RVIZ2")
-        
-        # RViz'in gömüleceği siyah ekran kutusu
         self.rviz_container = QWidget()
-        self.rviz_container.setMinimumHeight(220)  # Yüksekliği ayarlayabilirsin
+        self.rviz_container.setMinimumHeight(220)  
         self.rviz_container.setStyleSheet(f"background:rgba(0,0,0,0.4); border:1px solid {C['b']}; border-radius:5px;")
         
-        # İlk açıldığında görünecek bilgi metni
         ly = QVBoxLayout(self.rviz_container)
         info_lbl = make_label("RViz2 Ekranı Harici Olarak Çalışıyor\n\nArayüze Gömmek İçin Butona Basın", C["t3"], 10, mono=True)
         info_lbl.setAlignment(Qt.AlignCenter)
         ly.addWidget(info_lbl)
         
-        # Gömme Hilesini Tetikleyecek Buton
         btn_embed = QPushButton("⚲ EMBED RVIZ WINDOW")
-        btn_embed.setStyleSheet(self._mode_style()) # Sol taraftaki butonların stilini kullandık
+        btn_embed.setStyleSheet(self._mode_style()) 
         btn_embed.clicked.connect(self._try_embed_rviz)
         
         pnl.body.addWidget(self.rviz_container)
@@ -576,22 +492,16 @@ class CtrlPage(QWidget):
         return pnl
 
     def _try_embed_rviz(self):
-        """X11 Window Reparenting Hilesi: RViz2 penceresini zorla PyQt5 içine alır."""
         try:
-            # xdotool komutu ile "rviz2" sınıfına sahip pencerenin ID'sini bul
             out = subprocess.check_output(["xdotool", "search", "--class", "rviz2"]).decode('utf-8').strip()
             win_id_str = out.split('\n')[0]
             win_id = int(win_id_str)
-            
-            # Pencereyi PyQt5 nesnesi haline getir
             window = QWindow.fromWinId(win_id)
             rviz_widget = QWidget.createWindowContainer(window)
             
-            # Container'ın içindeki eski bilgi etiketini sil
             for i in reversed(range(self.rviz_container.layout().count())): 
                 self.rviz_container.layout().itemAt(i).widget().setParent(None)
                 
-            # RViz2 penceresini kutunun içine sıkıştır
             self.rviz_container.layout().addWidget(rviz_widget)
             print("\n[HMI] BAŞARILI: RViz2 penceresi arayüze gömüldü!")
             
@@ -599,11 +509,8 @@ class CtrlPage(QWidget):
             print(f"\n[HATA] RViz2 penceresi bulunamadı veya gömülemedi: {e}")
 
     def update_tcp_from_ros(self, x, y, z, rx, ry, rz):
-        """Updates the TCP sliders with real-time TF data from ROS."""
-        # If the user is currently dragging a slider, do NOT overwrite their target
         if getattr(self, '_is_planning', False):
             return
-            
         if not hasattr(self, '_tcp_sliders'):
             return
         new_values = {
@@ -615,27 +522,29 @@ class CtrlPage(QWidget):
                 s, sb = self._tcp_sliders[key]
                 s.blockSignals(True); s.setValue(int(val)); s.blockSignals(False)
                 sb.blockSignals(True); sb.setValue(val / 10.0); sb.blockSignals(False)
-    
+
     def update_ghost_tcp(self, x, y, z, rx, ry, rz):
-        
+        if self.tabs.tabText(self.tabs.currentIndex()) != "JOINTS":
+            return
         if not hasattr(self, '_tcp_sliders'):
-           return
+            return
         new_values = {
             "X": x * 10, "Y": y * 10, "Z": z * 10,
             "RX": rx * 10, "RY": ry * 10, "RZ": rz * 10
-        }   
+        }
         for key, val in new_values.items():
             if key in self._tcp_sliders:
                 s, sb = self._tcp_sliders[key]
                 s.blockSignals(True); s.setValue(int(val)); s.blockSignals(False)
                 sb.blockSignals(True); sb.setValue(val / 10.0); sb.blockSignals(False)
-                
+
     def _on_slider(self, i: int, val: float):
         self._joints[i]["v"] = val
-        self._target_joints[i] = math.radians(val)
         self._is_planning = True
-        # Ghost robot güncelle
-        self._ros.publish_ghost_robot(self._target_joints)
+        if hasattr(self, '_sliders') and len(self._sliders) == len(self._joints):
+            angles_deg = [s.value() / 10.0 for s, _sb in self._sliders]
+            angles_rad = [math.radians(deg) for deg in angles_deg]
+            self._ros.publish_ghost_robot(angles_rad)
         
     def _on_limits_changed(self):
         if not hasattr(self, '_limit_sliders') or len(self._limit_sliders) < 4:
@@ -646,9 +555,7 @@ class CtrlPage(QWidget):
         col   = self._limit_sliders["COLLISION SENSE"][0].value()
         self._ros.set_limits(j_spd, t_spd, trq, col)
 
-    # ── ROS güncellemesi (slider'ları güncelle) ───────────────────────────────
     def update_canvas_from_ros(self, angles_rad: list):
-        
         if getattr(self, '_is_planning', False):
             return
         for i, (s, sb) in enumerate(self._sliders):
@@ -659,22 +566,16 @@ class CtrlPage(QWidget):
                 sb.blockSignals(True); sb.setValue(deg); sb.blockSignals(False)
 
     def update_ghost_joints(self, angles_rad: list):
+        if self.tabs.tabText(self.tabs.currentIndex()) != "TCP":
+            return
         if not hasattr(self, '_sliders') or len(self._sliders) < len(angles_rad):
             return
-            # Tek kaynağı güncelle
-        for i in range(min(len(angles_rad), 6)):
-            
-            self._target_joints[i] = angles_rad[i]
-        # Joint sliderları güncelle
-        
         for i, (s, sb) in enumerate(self._sliders):
-            if i < len(angles_rad):
-                deg = math.degrees(angles_rad[i])
-                self._joints[i]["v"] = deg
-                s.blockSignals(True); s.setValue(int(deg * 10)); s.blockSignals(False)
-                sb.blockSignals(True); sb.setValue(deg); sb.blockSignals(False)
-                
-    # ── Mod seçimi ────────────────────────────────────────────────────────────
+            deg = math.degrees(angles_rad[i])
+            self._joints[i]["v"] = deg
+            s.blockSignals(True); s.setValue(int(deg * 10)); s.blockSignals(False)
+            sb.blockSignals(True); sb.setValue(deg); sb.blockSignals(False)
+
     def _mode_style(self) -> str:
         return (
             f"QPushButton{{background:transparent;border:1px solid {C['b']};"
@@ -691,11 +592,9 @@ class CtrlPage(QWidget):
             b.setChecked(b is active_btn)
         self._ros.publish_cmd(f"MODE:{mode}")
 
-    # ── Komut gönderme ────────────────────────────────────────────────────────
     def _cmd(self, c: str):
         self._is_planning = False
-        self._topbar._nav("dash")  # Dashboard sekmesine geç
-
+        
         if c == "START":
             # --- YENİ: Teach Mode aktifse kayıtlı programı oynat ---
             if hasattr(self, '_btn_activate') and self._btn_activate.isChecked():
@@ -704,13 +603,13 @@ class CtrlPage(QWidget):
             # -------------------------------------------------------
             
             active_tab = self.tabs.tabText(self.tabs.currentIndex())
-            self._is_planning = False
             
             if active_tab == "JOINTS":
                 print("[HMI] START: Joint hedefleri MoveIt'e iletiliyor...")
                 self._ros.log_message.emit("START: Joint hedefleri MoveIt'e iletiliyor...", "info")
-                self._ros.send_moveit_goal(self._target_joints)
-                self._ros.set_gripper(self._gripper_state)
+                angles_deg = [s.value() / 10.0 for s, _sb in self._sliders]
+                angles_rad = [math.radians(deg) for deg in angles_deg]
+                self._ros.send_moveit_goal(angles_rad)
                 
             elif active_tab == "TCP":
                 print("[HMI] START: Kartezyen (TCP) hedefleri MoveIt'e iletiliyor...")
@@ -722,7 +621,6 @@ class CtrlPage(QWidget):
                 ry = math.radians(self._tcp_sliders["RY"][0].value() / 10.0)
                 rz = math.radians(self._tcp_sliders["RZ"][0].value() / 10.0)
                 self._ros.send_moveit_cartesian_goal(x, y, z, rx, ry, rz)
-                self._ros.set_gripper(self._gripper_state)
                 
         elif c == "HOME":
             print("[HMI] KOMUT: MoveIt 'HOME' pozisyonuna gidiyor...")
@@ -730,13 +628,12 @@ class CtrlPage(QWidget):
             home_angles_deg = [0.0, 50.7, 86.5, -18.9, 80.5, 0.0]
             home_angles_rad = [math.radians(deg) for deg in home_angles_deg]
             self._ros.send_moveit_goal(home_angles_rad)
-            self._topbar._nav("dash")
+            
         elif c == "ZERO":
             print("[HMI] KOMUT: MoveIt 'ZERO' pozisyonuna gidiyor...")
             self._ros.log_message.emit("KOMUT: MoveIt 'ZERO' pozisyonuna gidiyor...", "warn")
             zero_angles_rad = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
             self._ros.send_moveit_goal(zero_angles_rad)
-            self._topbar._nav("dash")
             
         elif c == "STOP":
             # YENİ: Eğer Teach Mode oynatılıyorsa durdur
@@ -748,7 +645,6 @@ class CtrlPage(QWidget):
         else:
             self._ros.publish_cmd(c)
 
-    # ── Joystick (ileride kullanılabilir) ─────────────────────────────────────
     def _joy_stop(self):
         self._jx = self._jy = self._jz = self._jwz = 0.0
         self._joy_timer.stop()
