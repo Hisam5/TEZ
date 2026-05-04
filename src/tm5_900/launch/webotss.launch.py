@@ -22,7 +22,7 @@ def get_ros2_nodes(*args):
     spawn_URDF = URDFSpawner(
         name='tm5_900',
         urdf_path=urdf_path,
-        translation='0 0 0',
+        translation='0 0 0.64',
         rotation='0 0 1 0',
     )
 
@@ -130,9 +130,9 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        DeclareLaunchArgument(
+        DeclareLaunchArgument(  
             'world',
-            default_value='empty_world.wbt',
+            default_value='industrial_world.wbt',
             description='Choose one of the world files from `/tm5_900/worlds` directory'
         ),
         webots,

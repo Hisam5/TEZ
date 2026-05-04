@@ -35,8 +35,8 @@ def generate_launch_description():
     # MoveIt beyni, Webots hazır olmadan açılırsa motorları bulamayıp çöker.
     # Bu yüzden beyne ve gözlere birkaç saniyelik gecikme (delay) ekliyoruz.
     
-    delayed_move_group = TimerAction(period=4.0, actions=[move_group_launch])
-    delayed_rviz = TimerAction(period=6.0, actions=[rviz_launch])
+    delayed_move_group = TimerAction(period=6.0, actions=[move_group_launch])
+    delayed_rviz = TimerAction(period=8.0, actions=[rviz_launch])
 
     # Hepsini paketleyip sisteme fırlatıyoruz
     return LaunchDescription([

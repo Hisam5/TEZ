@@ -24,13 +24,9 @@ import subprocess
 os.environ["QTWEBENGINE_DISABLE_GPU"]     = "1"
 os.environ["QT_QPA_PLATFORM"]            = "xcb"
 os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
-    "--use-gl=swiftshader "
-    "--disable-gpu "
-    "--disable-gpu-compositing "
-    "--enable-webgl "
-    "--ignore-gpu-blacklist "
-    "--enable-accelerated-2d-canvas "
-    "--no-sandbox "
+    "--use-gl=swiftshader --disable-gpu --disable-gpu-compositing "
+    "--enable-webgl --ignore-gpu-blacklist --enable-accelerated-2d-canvas "
+    "--no-sandbox --disable-software-rasterizer"
 )
 for _flag in ["--use-gl=swiftshader","--disable-gpu","--disable-gpu-compositing",
               "--enable-webgl","--ignore-gpu-blacklist","--no-sandbox"]:
@@ -74,12 +70,9 @@ class HMI(QMainWindow):
         self._ros.connection_changed.connect(self._on_ros_status)
         self._ros.joint_state_received.connect(self._on_joint_state)
         self._ros.log_message.connect(self._on_ros_log)
-        
-        # --- Sizin Eklediğiniz Sinyaller ---
         self._ros.tcp_pose_received.connect(self._on_tcp_pose)
-        self._ros.ghost_joints_received.connect(self._on_ghost_joints)
         self._ros.ghost_tcp_received.connect(self._on_ghost_tcp)
-        
+        self._ros.ghost_joints_received.connect(self._on_ghost_joints)
         self._ros.start()
 
         central = QWidget(); self.setCentralWidget(central)
@@ -88,15 +81,10 @@ class HMI(QMainWindow):
 
         self._tb = TopBar()
         self._tb.nav_changed.connect(self._nav)
-        
-        # --- TopBar Bağlantıları (Her iki dosyanın birleşimi) ---
         self._tb.sim_toggle_pressed.connect(self._toggle_sim)
-        if hasattr(self._tb, 'estop_pressed'):
-            self._tb.estop_pressed.connect(self._estop)
-            
         root.addWidget(self._tb)
 
-        # ── Sim yöneticisi (Hesham'ın Eklediği) ───────────────────────────
+        # ── Sim yöneticisi ────────────────────────────────────────────────
         self._sim_state  = "IDLE"
         self._sim_proc   = None
         self._output_buf = ""
@@ -120,24 +108,20 @@ class HMI(QMainWindow):
         root.addWidget(self._stack, 1)
 
         self._dash = DashPage(self._ros, self._joints)
-        self._ctrl = CtrlPage(self._ros, self._joints)
-        # --- YENİ EKLENEN: Sinyali Dinle ve Dashboard'a Geç ---
-        self._ctrl.request_dashboard.connect(lambda: self._tb._nav("dash"))
-        # ------------------------------------------------------
+        self._ctrl = CtrlPage(self._ros, self._joints, self._tb)
         self._stack.addWidget(_padded(self._dash))
         self._stack.addWidget(_padded(self._ctrl))
         self._pages = {"dash": 0, "ctrl": 1}
 
         # ── Viewer referansı — dashboard.py'deki gerçek isim: _viewer_frame ──
         self._viewer = getattr(self._dash, "_viewer_frame", None)
-        if self._viewer is None:
-            print("[UYARI] dashboard._viewer_frame bulunamadı — viewer bağlantısı devre dışı")
-
-        self._clk_tmr = QTimer(self); self._clk_tmr.timeout.connect(self._tb.tick)
+        self._clk_tmr = QTimer(self)
+        self._clk_tmr.timeout.connect(self._tb.tick)
         self._clk_tmr.start(1000)
 
         self._up = 0
-        self._up_tmr = QTimer(self); self._up_tmr.timeout.connect(self._tick_up)
+        self._up_tmr = QTimer(self)
+        self._up_tmr.timeout.connect(self._tick_up)
         self._up_tmr.start(1000)
 
         self._demo_t = 0.0; self._demo_on = True
@@ -154,12 +138,10 @@ class HMI(QMainWindow):
     def _nav(self, pg: str):
         self._stack.setCurrentIndex(self._pages.get(pg, 0))
 
-    # ── Sizin Eklediğiniz Slotlar (Ghost ve TCP) ──────────────────────────────
     @pyqtSlot(float, float, float, float, float, float)
     def _on_tcp_pose(self, x, y, z, rx, ry, rz):
         self._dash.update_tcp(x, y, z, rx, ry, rz)
         self._ctrl.update_tcp_from_ros(x, y, z, rx, ry, rz)
-
     @pyqtSlot(list)
     def _on_ghost_joints(self, angles_rad):
         self._ctrl.update_ghost_joints(angles_rad)
@@ -168,14 +150,7 @@ class HMI(QMainWindow):
     def _on_ghost_tcp(self, x, y, z, rx, ry, rz):
         self._ctrl.update_ghost_tcp(x, y, z, rx, ry, rz)
 
-    # ── E-STOP (Sizin Eklediğiniz) ────────────────────────────────────────────
-    def _estop(self):
-        self._dash.log("⚠ ACİL DURUM BUTONU BASILDI", "err")
-        self._ros.publish_twist(0, 0, 0, 0)
-        self._ros.publish_cmd("ESTOP")
-        self._dash._sc_state.set_value("E-STOP", C["red"])
-
-    # ── Sim toggle (Hesham'ın Eklediği) ───────────────────────────────────────
+    # ── Sim toggle ────────────────────────────────────────────────────────────
     def _toggle_sim(self):
         if self._sim_state in ("LOADING", "STOPPING"):
             return
@@ -226,7 +201,7 @@ class HMI(QMainWindow):
         self._tb.set_sim_state("STOPPING")
         self._loading_timer.stop()
         self._dash.log("SIGINT gönderiliyor (Ctrl+C)...", "warn")
-
+        
         if self._viewer:
             self._viewer.disconnect_webots()
 
@@ -269,9 +244,6 @@ class HMI(QMainWindow):
         self._sim_state = "IDLE"
         self._sim_proc  = None
         self._tb.set_sim_state("IDLE")
-        # --- YENİ EKLENEN: Simülasyon kapandığında RViz'i serbest bırak ---
-        self._ctrl._release_rviz()
-        # ------------------------------------------------------------------
 
     # ── Output okuma ──────────────────────────────────────────────────────────
     def _poll_output(self):
@@ -289,6 +261,7 @@ class HMI(QMainWindow):
                 if self._viewer:
                     self._viewer.disconnect_webots()
                 self._reset_to_idle()
+                self._ctrl._release_rviz()
             return
 
         try:
@@ -329,9 +302,8 @@ class HMI(QMainWindow):
                     if self._viewer:
                         self._dash.log("Webots 3D görünümüne bağlanılıyor...", "info")
                         self._viewer.connect_to_webots()
-                    # --- YENİ EKLENEN: RViz'i Gömmek için 6 saniye bekle ---
+                        
                     QTimer.singleShot(6000, lambda: self._ctrl._try_embed_rviz())
-                    # -------------------------------------------------------
                     break
 
     # ── Zaman aşımı ───────────────────────────────────────────────────────────
@@ -345,23 +317,20 @@ class HMI(QMainWindow):
             self._tb.set_sim_state("RUNNING")
             if self._viewer:
                 self._viewer.connect_to_webots()
-            # --- YENİ EKLENEN: RViz'i Gömmek için 6 saniye bekle ---
-            QTimer.singleShot(6000, lambda: self._ctrl._try_embed_rviz())
-            # -------------------------------------------------------
 
     # ── ROS sinyal işleyicileri ───────────────────────────────────────────────
     @pyqtSlot(bool)
     def _on_ros_status(self, online: bool):
-        self._tb.set_ros_status(online)
+        self._tb.set_ros_status(not online)
         self._demo_on = not online
 
     @pyqtSlot(list, list, list)
-    def _on_joint_state(self, pos, vel, eff):
+    def _on_joint_state(self, pos: list, vel: list, eff: list):
         self._dash.update_from_ros(pos, vel, eff)
         self._ctrl.update_canvas_from_ros(pos)
 
     @pyqtSlot(str, str)
-    def _on_ros_log(self, msg, kind):
+    def _on_ros_log(self, msg: str, kind: str):
         self._dash.log(msg, kind)
 
     # ── Timer'lar ─────────────────────────────────────────────────────────────
@@ -384,9 +353,13 @@ class HMI(QMainWindow):
         super().closeEvent(e)
 
 
-def _padded(w):
+# ─────────────────────────────────────────────────────────────────────────────
+#  Yardımcı: widget'ı içine alan saydam kaplama
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _padded(w: QWidget) -> QWidget:
     c = QWidget(); c.setStyleSheet("background:transparent;")
-    ly = QVBoxLayout(c); ly.setContentsMargins(0,0,0,0); ly.setSpacing(0)
+    ly = QVBoxLayout(c); ly.setContentsMargins(0, 0, 0, 0); ly.setSpacing(0)
     ly.addWidget(w)
     return c
 

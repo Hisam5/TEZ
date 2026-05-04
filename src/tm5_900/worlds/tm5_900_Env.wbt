@@ -1,0 +1,38 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/tables/protos/Desk.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/kuka/youbot/protos/KukaBox.proto"
+
+WorldInfo {
+  basicTimeStep 20
+}
+Viewpoint {
+  orientation -0.30458468153144785 0.9460453749220135 0.11057269267343411 0.3315635824499372
+  position -2.8403610537252817 0.3258011913552373 1.68421712164129
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 3 3
+  floorAppearance Parquetry {
+  }
+}
+Desk {
+}
+TexturedBackgroundLight {
+  texture "factory"
+}
+TexturedBackground {
+  texture "factory"
+}
+KukaBox {
+  hidden linearVelocity_0 -3.86067924100493e-18 2.8729837835328345e-19 2.435553768794954e-15
+  hidden angularVelocity_0 -3.9474596431116576e-16 -4.845617595617218e-16 -1.852724408233118e-16
+  translation -1.8485553435078722e-15 -9.784442811694115e-16 0.7349172281249997
+  rotation 0.0017940122624499634 -0.059121774896459575 0.9982491659165534 9.626542861458274e-16
+  size 0.05 0.05 0.05
+}

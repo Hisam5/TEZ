@@ -25,7 +25,7 @@ from widgets import make_label
 
 class _WebPage(QWebEnginePage):
     def javaScriptConsoleMessage(self, level, msg, line, src):
-        if "Unknown message received: \"time:" in msg or "Unknown message received: \"resize:" in msg:
+        if "Unknown message received: \"time:" in msg:
             return
         tag = ["DBG", "INF", "WRN", "ERR"][level] if level < 4 else "???"
         print(f"  [JS:{tag} L{line}] {msg}")
@@ -72,8 +72,8 @@ class ViewerFrame(QFrame):
         # ── Windows IP tespiti ─────────────────────────────────────────────
         self._win_ip = self._detect_windows_ip()
         self._webots_url = f"http://{self._win_ip}:{self.WEBOTS_PORT}/index.html"
-        print(f"\n[BİLGİ] WSL2 → Windows IP: {self._win_ip}")
-        print(f"[BİLGİ] Webots URL: {self._webots_url}\n")
+        print(f"[BİLGİ] WSL2 → Windows IP: {self._win_ip}")
+        print(f"[BİLGİ] Webots URL: {self._webots_url}")
 
         # ── WebEngine ─────────────────────────────────────────────────────
         self.browser = QWebEngineView()

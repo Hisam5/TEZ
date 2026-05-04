@@ -1,11 +1,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
-#  topbar.py  —  Üst navigasyon barı  (v2.3)
+#  topbar.py  —  Üst navigasyon barı  (v2.2)
 #
-#  DEĞİŞİKLİKLER (BİRLEŞTİRİLMİŞ & GÜNCELLENMİŞ):
-#   • DASHBOARD / CONTROL sekmeleri
-#   • ROS durum pill'i ve Saat
-#   • LAUNCH SIM / STOP SIM butonu (Hesham'ın sim yöneticisi için)
-#   • E-STOP butonu İPTAL EDİLDİ
+#  DEĞİŞİKLİKLER:
+#   • set_sim_state("STOPPING") durumu eklendi — turuncu, disabled
+#   • LOADING ve STOPPING'de buton setEnabled(False)
+#   • IDLE ve RUNNING'de buton setEnabled(True)
 # ─────────────────────────────────────────────────────────────────────────────
 
 from datetime import datetime
@@ -15,10 +14,11 @@ from config  import C
 from widgets import make_label
 
 
+
 class TopBar(QFrame):
     nav_changed        = pyqtSignal(str)
     sim_toggle_pressed = pyqtSignal()
-
+    
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFixedHeight(56)
@@ -26,10 +26,10 @@ class TopBar(QFrame):
             f"TopBar{{background:qlineargradient(x1:0,y1:0,x2:0,y2:1,"
             f"stop:0 #0b1926,stop:1 {C['bg']});border-bottom:1px solid {C['b']};}}"
         )
+        
         main = QHBoxLayout(self)
         main.setContentsMargins(18, 0, 18, 0)
 
-        # ── Logo + proje adı ──────────────────────────────────────────────
         logo = QLabel("TM")
         logo.setFixedSize(32, 32)
         logo.setAlignment(Qt.AlignCenter)
@@ -52,7 +52,6 @@ class TopBar(QFrame):
         info_col.addWidget(name); info_col.addWidget(sub)
         main.addWidget(logo); main.addLayout(info_col); main.addStretch()
 
-        # ── Navigasyon butonları ──────────────────────────────────────────
         self._btn_dash = QPushButton("DASHBOARD")
         self._btn_ctrl = QPushButton("CONTROL")
         for btn, pg in [(self._btn_dash, "dash"), (self._btn_ctrl, "ctrl")]:
@@ -63,7 +62,6 @@ class TopBar(QFrame):
         self._update_nav()
         main.addSpacing(12)
 
-        # ── ROS durum pill ────────────────────────────────────────────────
         self.pill = QLabel("● CONNECTING")
         self.pill.setStyleSheet(
             f"background:rgba(255,61,90,0.07);border:1px solid rgba(255,61,90,0.22);"
@@ -72,7 +70,6 @@ class TopBar(QFrame):
         )
         main.addWidget(self.pill)
 
-        # ── Saat ──────────────────────────────────────────────────────────
         self.clock = QLabel("--:--:--")
         self.clock.setStyleSheet(
             f"font-family:'Share Tech Mono';font-size:12px;color:{C['t2']};"
@@ -80,13 +77,29 @@ class TopBar(QFrame):
         )
         main.addWidget(self.clock)
 
-        # ── Simülasyon Butonu (Hesham'ın) ─────────────────────────────────
-        self.btn_sim = QPushButton("▶ LAUNCH SIM")
+        self.btn_sim = QPushButton("LAUNCH SIM")
         self.btn_sim.clicked.connect(self.sim_toggle_pressed)
         main.addWidget(self.btn_sim)
         self.set_sim_state("IDLE")
+    
+    def set_ros_status(self, online: bool):
+        if online:
+            self.pill.setText("● ROS 2 ONLINE")
+            self.pill.setStyleSheet(
+                f"background:rgba(0,230,118,0.07);"
+                f"border:1px solid rgba(0,230,118,0.22);"
+                f"border-radius:12px;color:{C['ok']};"
+                f"font-family:'Share Tech Mono';font-size:10px;padding:4px 12px;"
+            )
+        else:
+            self.pill.setText("● OFFLINE")
+            self.pill.setStyleSheet(
+                f"background:rgba(255,61,90,0.07);"
+                f"border:1px solid rgba(255,61,90,0.22);"
+                f"border-radius:12px;color:{C['red']};"
+                f"font-family:'Share Tech Mono';font-size:10px;padding:4px 12px;"
+            )
 
-    # ── Simülasyon Durum Yönetimi ──────────────────────────────────────────────
     def set_sim_state(self, state: str):
         base = (
             f"border-radius:4px;font-family:'Rajdhani';font-size:12px;"
@@ -98,7 +111,8 @@ class TopBar(QFrame):
 
         if state == "IDLE":
             self.btn_sim.setEnabled(True)
-            self.btn_sim.setText("▶ LAUNCH SIM")
+            self.btn_sim.setText("LAUNCH SIM")
+            self.set_ros_status(online=False)
             self.btn_sim.setStyleSheet(
                 f"QPushButton{{background:rgba(255,61,90,0.10);"
                 f"border:2px solid {C['red']};color:{C['red']};{base}}}"
@@ -107,7 +121,7 @@ class TopBar(QFrame):
 
         elif state == "LOADING":
             self.btn_sim.setEnabled(False)
-            self.btn_sim.setText("⌛ LOADING...")
+            self.btn_sim.setText("LOADING...")
             self.btn_sim.setStyleSheet(
                 f"QPushButton{{background:rgba(255,165,0,0.10);"
                 f"border:2px solid orange;color:orange;{base}}}"
@@ -117,7 +131,8 @@ class TopBar(QFrame):
 
         elif state == "RUNNING":
             self.btn_sim.setEnabled(True)
-            self.btn_sim.setText("⬛ STOP SIM")
+            self.btn_sim.setText("STOP SIM")
+            self.set_ros_status(online=True)
             self.btn_sim.setStyleSheet(
                 f"QPushButton{{background:rgba(0,230,118,0.10);"
                 f"border:2px solid {C['ok']};color:{C['ok']};{base}}}"
@@ -125,8 +140,9 @@ class TopBar(QFrame):
             )
 
         elif state == "STOPPING":
+            # Tıklanamaz, soluk turuncu — temizlik devam ediyor
             self.btn_sim.setEnabled(False)
-            self.btn_sim.setText("⏹ STOPPING...")
+            self.btn_sim.setText("STOPPING...")
             self.btn_sim.setStyleSheet(
                 f"QPushButton{{background:rgba(255,100,0,0.10);"
                 f"border:2px solid rgba(255,100,0,0.60);color:rgba(255,100,0,0.60);{base}}}"
@@ -134,7 +150,6 @@ class TopBar(QFrame):
                 f"border:2px solid rgba(255,100,0,0.30);color:rgba(255,100,0,0.35);}}"
             )
 
-    # ── Navigasyon Stili ve Fonksiyonları ──────────────────────────────────────
     def _nav_style(self, active: bool = False) -> str:
         if active:
             return (
@@ -160,25 +175,6 @@ class TopBar(QFrame):
         self._active = pg
         self._update_nav()
         self.nav_changed.emit(pg)
-
-    # ── Public Metodlar ────────────────────────────────────────────────────────
-    def set_ros_status(self, online: bool):
-        if online:
-            self.pill.setText("● ROS 2 ONLINE")
-            self.pill.setStyleSheet(
-                f"background:rgba(0,230,118,0.07);"
-                f"border:1px solid rgba(0,230,118,0.22);"
-                f"border-radius:12px;color:{C['ok']};"
-                f"font-family:'Share Tech Mono';font-size:10px;padding:4px 12px;"
-            )
-        else:
-            self.pill.setText("● OFFLINE")
-            self.pill.setStyleSheet(
-                f"background:rgba(255,61,90,0.07);"
-                f"border:1px solid rgba(255,61,90,0.22);"
-                f"border-radius:12px;color:{C['red']};"
-                f"font-family:'Share Tech Mono';font-size:10px;padding:4px 12px;"
-            )
 
     def tick(self):
         self.clock.setText(datetime.now().strftime("%H:%M:%S"))
