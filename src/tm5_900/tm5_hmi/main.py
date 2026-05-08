@@ -71,7 +71,6 @@ class HMI(QMainWindow):
         self._joints = copy.deepcopy(TM5_JOINTS)
 
         self._ros = RosWorker()
-        self._ros.connection_changed.connect(self._on_ros_status)
         self._ros.joint_state_received.connect(self._on_joint_state)
         self._ros.log_message.connect(self._on_ros_log)
         
@@ -352,7 +351,7 @@ class HMI(QMainWindow):
     # ── ROS sinyal işleyicileri ───────────────────────────────────────────────
     @pyqtSlot(bool)
     def _on_ros_status(self, online: bool):
-        self._tb.set_ros_status(online=online)
+        self._tb.set_ros_status(online=False)
         self._demo_on = not online
 
     @pyqtSlot(list, list, list)

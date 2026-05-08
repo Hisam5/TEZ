@@ -118,7 +118,7 @@ class DashPage(QWidget):
         self._file_lbl.setAlignment(Qt.AlignCenter)
         self._file_lbl.setWordWrap(True)
 
-        load_btn = QPushButton("📁  BROWSE FILE")
+        load_btn = QPushButton("BROWSE FILE")
         load_btn.setStyleSheet(
             f"QPushButton{{background:transparent;border:2px dashed {C['bb']};"
             f"border-radius:5px;color:{C['t2']};font-family:'Share Tech Mono';"
