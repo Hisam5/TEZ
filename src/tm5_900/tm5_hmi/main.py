@@ -352,7 +352,7 @@ class HMI(QMainWindow):
     # ── ROS sinyal işleyicileri ───────────────────────────────────────────────
     @pyqtSlot(bool)
     def _on_ros_status(self, online: bool):
-        self._tb.set_ros_status(online)
+        self._tb.set_ros_status(online=online)
         self._demo_on = not online
 
     @pyqtSlot(list, list, list)

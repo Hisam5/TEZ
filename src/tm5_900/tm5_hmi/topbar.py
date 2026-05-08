@@ -43,7 +43,7 @@ class TopBar(QFrame):
             f"font-family:'Rajdhani';font-size:20px;font-weight:700;"
             f"color:{C['t1']};background:transparent;"
         )
-        sub = QLabel("6-DOF COBOT (3D PRINTED CHASSIS) · HMI v2.2  |  DEV: HAMZA & AHMET")
+        sub = QLabel("6-DOF COBOT (3D PRINTED CHASSIS) · HMI v2.2  |  DEV: HESHAM & AHMET")
         sub.setStyleSheet(
             f"font-family:'Share Tech Mono';font-size:9px;color:{C['t3']};"
             f"letter-spacing:.18em;background:transparent;"
@@ -99,6 +99,7 @@ class TopBar(QFrame):
         if state == "IDLE":
             self.btn_sim.setEnabled(True)
             self.btn_sim.setText("▶ LAUNCH SIM")
+            self.set_ros_status(online=False)
             self.btn_sim.setStyleSheet(
                 f"QPushButton{{background:rgba(255,61,90,0.10);"
                 f"border:2px solid {C['red']};color:{C['red']};{base}}}"
@@ -107,7 +108,7 @@ class TopBar(QFrame):
 
         elif state == "LOADING":
             self.btn_sim.setEnabled(False)
-            self.btn_sim.setText("⌛ LOADING...")
+            self.btn_sim.setText("LOADING...")
             self.btn_sim.setStyleSheet(
                 f"QPushButton{{background:rgba(255,165,0,0.10);"
                 f"border:2px solid orange;color:orange;{base}}}"
@@ -117,7 +118,8 @@ class TopBar(QFrame):
 
         elif state == "RUNNING":
             self.btn_sim.setEnabled(True)
-            self.btn_sim.setText("⬛ STOP SIM")
+            self.btn_sim.setText("STOP SIM")
+            self.set_ros_status(online=True)
             self.btn_sim.setStyleSheet(
                 f"QPushButton{{background:rgba(0,230,118,0.10);"
                 f"border:2px solid {C['ok']};color:{C['ok']};{base}}}"
@@ -126,7 +128,7 @@ class TopBar(QFrame):
 
         elif state == "STOPPING":
             self.btn_sim.setEnabled(False)
-            self.btn_sim.setText("⏹ STOPPING...")
+            self.btn_sim.setText("STOPPING...")
             self.btn_sim.setStyleSheet(
                 f"QPushButton{{background:rgba(255,100,0,0.10);"
                 f"border:2px solid rgba(255,100,0,0.60);color:rgba(255,100,0,0.60);{base}}}"

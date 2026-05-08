@@ -83,7 +83,7 @@ class RosWorker(QThread):
     # ── Ana döngü ─────────────────────────────────────────────────────────────
     def run(self):
         if not ROS_AVAILABLE:
-            self.connection_changed.emit(False)
+            #self.connection_changed.emit(False)
             self.log_message.emit("rclpy bulunamadı — demo modu", "warn")
             return
         try:
@@ -110,7 +110,7 @@ class RosWorker(QThread):
             self._fk_client = self._node.create_client(GetPositionFK, '/compute_fk') # YENİ
             self._node.create_subscription(
                 JointState, "/joint_states", self._js_cb, 10)
-            self.connection_changed.emit(True)
+            #self.connection_changed.emit(True)
             self.log_message.emit("ROS 2 bağlandı — tm5_hmi node aktif", "ok")
             while self._active and rclpy.ok():
                 rclpy.spin_once(self._node, timeout_sec=0.05)
@@ -136,7 +136,7 @@ class RosWorker(QThread):
                     pass
  #===============================================================
         except Exception as exc:
-            self.connection_changed.emit(False)
+            #self.connection_changed.emit(False)
             self.log_message.emit(f"ROS 2 hatası: {exc}", "err")
     # ── /joint_states callback ────────────────────────────────────────────────
     def _js_cb(self, msg):

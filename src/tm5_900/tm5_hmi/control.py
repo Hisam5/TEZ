@@ -87,19 +87,19 @@ class CtrlPage(QWidget):
         self._btn_activate.toggled.connect(self._on_activate_toggled)
         mg.addWidget(self._btn_activate, 0, 0) 
         
-        btn_point = QPushButton("📍 RECORD POINT")
+        btn_point = QPushButton("RECORD POINT")
         btn_point.setStyleSheet(self._mode_style())
         btn_point.setMinimumHeight(35)
         btn_point.clicked.connect(self._record_point)
         mg.addWidget(btn_point, 0, 1) 
 
-        btn_save = QPushButton("💾 SAVE PROG")
+        btn_save = QPushButton("SAVE PROG")
         btn_save.setStyleSheet(self._mode_style())
         btn_save.setMinimumHeight(35)
         btn_save.clicked.connect(self._save_active_prog)
         mg.addWidget(btn_save, 1, 0)
         
-        btn_delete = QPushButton("🗑 DELETE PROG")
+        btn_delete = QPushButton("DELETE PROG")
         btn_delete.setStyleSheet(self._mode_style())
         btn_delete.setMinimumHeight(35)
         btn_delete.clicked.connect(self._delete_active_prog)
