@@ -307,7 +307,7 @@ class DashPage(QWidget):
         self._tcp["RY"].set_value(ry, -180, 180)
         self._tcp["RZ"].set_value(rz, -180, 180)
 #================================================================
-    def update_from_ros(self, pos: list, vel: list, eff: list):
+    def update_from_ros(self, pos: list, vel: list):
         """Gerçek ROS verileriyle eklem kartlarını güncelle."""
         for i, card in enumerate(self._jcards):
             if i >= len(pos): break
@@ -316,24 +316,23 @@ class DashPage(QWidget):
             card.update_data(
                 deg,
                 math.degrees(vel[i]) if i < len(vel) else 0.0,
-                eff[i] if i < len(eff) else 0.0,
+                  # eff is not used in the updated method
             )
 
-    def update_demo(self, t: float):
-        """Demo animasyonu (ROS yokken)."""
-        for i, j in enumerate(self._joints):
-            j["v"] = max(j["mn"], min(j["mx"], j["v"] + (random.random() - 0.5) * 0.3))
-            self._jcards[i].update_data(
-                j["v"],
-                (random.random() - 0.5) * 2,
-                (random.random() - 0.5) * 5,
-            )
-        x = math.sin(t / 3) * 300; y = math.cos(t / 4) * 200; z = 650 + math.sin(t / 5) * 80
-        self._tcp["X"].set_value(x); self._tcp["Y"].set_value(y)
-        self._tcp["Z"].set_value(z, 0, 1400)
-        self._tcp["RX"].set_value(math.sin(t / 6) * 30, -180, 180)
-        self._tcp["RY"].set_value(math.cos(t / 7) * 20, -180, 180)
-        self._tcp["RZ"].set_value(math.sin(t / 8) * 45, -180, 180)
+    # def update_demo(self, t: float):
+    #     """Demo animasyonu (ROS yokken)."""
+    #     for i, j in enumerate(self._joints):
+    #         j["v"] = max(j["mn"], min(j["mx"], j["v"] + (random.random() - 0.5) * 0.3))
+    #         self._jcards[i].update_data(
+    #             j["v"],
+    #             (random.random() - 0.5) * 2,
+    #         )
+        #x = math.sin(t / 3) * 300; y = math.cos(t / 4) * 200; z = 650 + math.sin(t / 5) * 80
+        # self._tcp["X"].set_value(x); self._tcp["Y"].set_value(y)
+        # self._tcp["Z"].set_value(z, 0, 1400)
+        # self._tcp["RX"].set_value(math.sin(t / 6) * 30, -180, 180)
+        # self._tcp["RY"].set_value(math.cos(t / 7) * 20, -180, 180)
+        # self._tcp["RZ"].set_value(math.sin(t / 8) * 45, -180, 180)
 
     def log(self, msg: str, kind: str = "info") -> int:
         return self._log.add(msg, kind)

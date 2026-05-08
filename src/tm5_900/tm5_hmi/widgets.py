@@ -158,9 +158,9 @@ class JointCard(QFrame):
         self.vel_val = make_label("0.00°/s", C["a2"], 9, bold=True)
         vl.addWidget(self.vel_val)
         el = QVBoxLayout(); el.setSpacing(0)
-        el.addWidget(make_label("EFF", C["t3"], 7, mono=True))
-        self.eff_val = make_label("0.00Nm", C["a3"], 9, bold=True)
-        el.addWidget(self.eff_val)
+        #el.addWidget(make_label("EFF", C["t3"], 7, mono=True))
+        #self.eff_val = make_label("0.00Nm", C["a3"], 9, bold=True)
+        #el.addWidget(self.eff_val)
         row.addLayout(vl); row.addLayout(el)
         ly.addLayout(row)
 
@@ -168,12 +168,12 @@ class JointCard(QFrame):
         c = {"ok": C["ok"], "w": C["warn"], "e": C["red"]}.get(state, C["ok"])
         self.dot.setStyleSheet(f"background:{c};border-radius:4px;")
 
-    def update_data(self, deg: float, vel: float, eff: float):
+    def update_data(self, deg: float, vel: float):
         self.pos_lbl.setText(f"{deg:.1f}°")
         pct = int((deg - self._mn) / (self._mx - self._mn) * 1000)
         self.pos_bar.setValue(max(0, min(1000, pct)))
         self.vel_val.setText(f"{vel:.2f}°/s")
-        self.eff_val.setText(f"{eff:.2f}Nm")
+        #self.eff_val.setText(f"{eff:.2f}Nm")
         self._set_dot("w" if abs(vel) > 4 else "ok")
 
 

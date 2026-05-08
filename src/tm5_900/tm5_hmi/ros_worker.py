@@ -50,7 +50,7 @@ class RosWorker(QThread):
     ghost_tcp_received = pyqtSignal(float, float, float, float, float, float)
  #===============================================================
     
-    joint_state_received = pyqtSignal(list, list, list)   # pos, vel, eff
+    joint_state_received = pyqtSignal(list, list)   # pos, vel, eff
     connection_changed   = pyqtSignal(bool)
     log_message          = pyqtSignal(str, str)            # message, kind
     JOINT_NAMES = [j["ros"] for j in TM5_JOINTS]
@@ -141,13 +141,13 @@ class RosWorker(QThread):
     # ── /joint_states callback ────────────────────────────────────────────────
     def _js_cb(self, msg):
         idx = {n: i for i, n in enumerate(msg.name)}
-        pos, vel, eff = [], [], []
+        pos, vel = [], []
         for jn in self.JOINT_NAMES:
             i = idx.get(jn)
             pos.append(msg.position[i] if i is not None and msg.position else 0.0)
             vel.append(msg.velocity[i] if i is not None and msg.velocity else 0.0)
-            eff.append(msg.effort[i]   if i is not None and msg.effort   else 0.0)
-        self.joint_state_received.emit(pos, vel, eff)
+            
+        self.joint_state_received.emit(pos, vel)
     # ── Publish yardımcıları ──────────────────────────────────────────────────
     def set_limits(self, joint_speed_pct: float, tcp_speed_mm: float , collision_pct: float):
         """Arayüzden gelen limit değerlerini günceller."""

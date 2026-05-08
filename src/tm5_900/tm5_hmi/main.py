@@ -139,12 +139,13 @@ class HMI(QMainWindow):
         self._up_tmr = QTimer(self); self._up_tmr.timeout.connect(self._tick_up)
         self._up_tmr.start(1000)
 
-        self._demo_t = 0.0; self._demo_on = True
-        self._demo_tmr = QTimer(self); self._demo_tmr.timeout.connect(self._tick_demo)
-        self._demo_tmr.start(400)
+        #self._demo_t = 0.0; self._demo_on = True
+        #self._demo_tmr = QTimer(self); self._demo_tmr.timeout.connect(self._tick_demo)
+        #self._demo_tmr.start(400)
 
         self._dash.log("HMI v2.4 başlatıldı", "ok")
         self._dash.log("WSL2 + Windows Webots modu", "info")
+        
         self._dash.log("Eklem: " + " · ".join(j["ros"] for j in TM5_JOINTS), "info")
         if self._viewer:
             self._dash.log("Viewer hazır — simülasyon bekleniyor", "info")
@@ -156,8 +157,9 @@ class HMI(QMainWindow):
     # ── Sizin Eklediğiniz Slotlar (Ghost ve TCP) ──────────────────────────────
     @pyqtSlot(float, float, float, float, float, float)
     def _on_tcp_pose(self, x, y, z, rx, ry, rz):
-        self._dash.update_tcp(x, y, z, rx, ry, rz)
-        self._ctrl.update_tcp_from_ros(x, y, z, rx, ry, rz)
+        if self._sim_state == "RUNNING":
+            self._dash.update_tcp(x, y, z, rx, ry, rz)
+            self._ctrl.update_tcp_from_ros(x, y, z, rx, ry, rz)
 
     @pyqtSlot(list)
     def _on_ghost_joints(self, angles_rad):
@@ -225,6 +227,8 @@ class HMI(QMainWindow):
         self._tb.set_sim_state("STOPPING")
         self._loading_timer.stop()
         self._dash.log("SIGINT gönderiliyor (Ctrl+C)...", "warn")
+        self._dash.update_tcp(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        self._dash.update_from_ros([0]*6, [0]*6)
 
         if self._viewer:
             self._viewer.disconnect_webots()
@@ -354,10 +358,11 @@ class HMI(QMainWindow):
         self._tb.set_ros_status(online=False)
         self._demo_on = not online
 
-    @pyqtSlot(list, list, list)
-    def _on_joint_state(self, pos, vel, eff):
-        self._dash.update_from_ros(pos, vel, eff)
-        self._ctrl.update_canvas_from_ros(pos)
+    @pyqtSlot(list, list)
+    def _on_joint_state(self, pos, vel):
+        if self._sim_state == "RUNNING":
+            self._dash.update_from_ros(pos, vel)
+            self._ctrl.update_canvas_from_ros(pos)
 
     @pyqtSlot(str, str)
     def _on_ros_log(self, msg, kind):
@@ -372,7 +377,7 @@ class HMI(QMainWindow):
     def _tick_demo(self):
         if self._demo_on:
             self._demo_t += 0.4
-            self._dash.update_demo(self._demo_t)
+            
 
     # ── Kapat ─────────────────────────────────────────────────────────────────
     def closeEvent(self, e):
