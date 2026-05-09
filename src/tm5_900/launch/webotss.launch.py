@@ -20,11 +20,11 @@ def get_ros2_nodes(*args):
         robot_description_xml = file.read()
         
     spawn_URDF = URDFSpawner(
-        name='tm5_900',
-        urdf_path=urdf_path,
-        translation='0 0 0.64',
-        rotation='0 0 1 0',
-    )
+            name='tm5_900',
+            urdf_path=urdf_path,
+            translation='-0.24 -5.30 0.75',  # <-- Y eksenini -4.84 yaparak sepete yaklastirdik
+            rotation='0.0 0.0 1.0 0.0'
+        )
 
     controller_manager_timeout = ['--controller-manager-timeout', '100']
     controller_manager_prefix = 'python.exe' if os.name == 'nt' else ''
@@ -99,7 +99,7 @@ def generate_launch_description():
     world = LaunchConfiguration('world')
 
     webots = WebotsLauncher(
-        world=PathJoinSubstitution([package_dir, 'worlds', world]),
+        world=PathJoinSubstitution([package_dir, 'worlds',world]),
         ros2_supervisor=True,
         stream='mjpeg'
         
@@ -130,9 +130,9 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        DeclareLaunchArgument(  
+        DeclareLaunchArgument(
             'world',
-            default_value='industrial_world.wbt',
+            default_value='empty_world.wbt',
             description='Choose one of the world files from `/tm5_900/worlds` directory'
         ),
         webots,
