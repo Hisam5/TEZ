@@ -432,7 +432,7 @@ class RosWorker(QThread):
         
         # --- DÜZELTİLEN KISIM: Hata sınırlarını ihlal etmeyen değerler ---
         if action == "OPEN":
-            pt.positions = [0.0, 0.0]   
+            pt.positions = [-0.02, -0.02]  # Açmak için negatif değerler (örneğin -0.02 rad ~ 1.15 derece)  
         elif action == "CLOSE":
             pt.positions = [0.025, 0.025] 
         # -----------------------------------------------------------------
