@@ -281,8 +281,8 @@ class CtrlPage(QWidget):
         # İlk noktaya hemen git
         self._tick_run_prog()
         
-        # Diğer noktalar için zamanlayıcıyı başlat (Her nokta arası 4 saniye)
-        self._run_timer.start(4000)
+        # Diğer noktalar için zamanlayıcıyı başlat (Her nokta arası 1 saniye)
+        self._run_timer.start(1000)
 
     def _tick_run_prog(self):
         """Timer ile sıradaki kayıtlı noktaya MoveIt komutu gönderir."""
@@ -592,7 +592,7 @@ class CtrlPage(QWidget):
         
         # --- DÜZELTİLEN KISIM: RViz sınır hatasını (turuncu renk) engellemek için 0.0 yapıldı ---
         if action == "OPEN":
-            self._ros.ghost_gripper_pos = [0.0, 0.0]
+            self._ros.ghost_gripper_pos = [-0.01, -0.01]  # Açık konum (parmaklar birbirinden uzak)
         elif action == "CLOSE":
             self._ros.ghost_gripper_pos = [0.025, 0.025]
             
